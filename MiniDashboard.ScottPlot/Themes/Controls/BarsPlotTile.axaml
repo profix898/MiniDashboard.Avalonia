@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:cartesian="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Cartesian">
+
+    <ControlTheme x:Key="{x:Type cartesian:BarsPlotTile}" TargetType="cartesian:BarsPlotTile"
+                  BasedOn="{StaticResource {x:Type cartesian:CartesianPlotTile}}" />
+
+</ResourceDictionary>

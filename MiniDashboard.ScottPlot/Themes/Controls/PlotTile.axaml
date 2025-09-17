@@ -1,0 +1,85 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:base="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+                    xmlns:scottPlot="clr-namespace:ScottPlot.Avalonia;assembly=ScottPlot.Avalonia"
+                    xmlns:charts="clr-namespace:MiniDashboard.Avalonia.ScottPlot">
+
+    <ControlTheme x:Key="{x:Type charts:PlotTile}" TargetType="charts:PlotTile">
+        <Setter Property="TileHeader" Value="Chart" />
+        <Setter Property="TileBackground" Value="{DynamicResource TileBackgroundBrush}" />
+        <Setter Property="TileForeground" Value="{DynamicResource TileForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TileBorderBrush}" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding TileBackground}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                IsVisible="{TemplateBinding IsHeaderVisible}"
+                                Background="{DynamicResource TileHeaderBackgroundBrush}"
+                                Padding="8"
+                                CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource TopCornersOnlyConverter}}"
+                                base:DraggableBehavior.IsEnabled="True"
+                                Cursor="SizeAll">
+                            <Grid>
+                                <ContentPresenter x:Name="PART_HeaderPresenter"
+                                                  Content="{TemplateBinding TileHeader}"
+                                                  ContentTemplate="{TemplateBinding HeaderTemplate}" />
+                                <Border x:Name="PART_InvalidTint"
+                                        Background="#7FEF4444"
+                                        IsVisible="{Binding IsPlacementValid, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseBoolConverter}}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Padding="{TemplateBinding Padding}">
+                            <scottPlot:AvaPlot x:Name="PART_AvaPlot" />
+                        </Border>
+
+                        <Thumb Grid.Row="1" x:Name="PART_ResizeThumb_HitArea"
+                               IsVisible="{TemplateBinding IsResizable}"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Bottom"
+                               Margin="-6"
+                               Width="40" Height="40"
+                               Background="Transparent"
+                               Cursor="SizeAll"
+                               Opacity="0"
+                               ZIndex="1000" />
+
+                        <Thumb Grid.Row="1" x:Name="PART_ResizeThumb"
+                               IsVisible="{TemplateBinding IsResizable}"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Bottom"
+                               Margin="2"
+                               Width="16" Height="16"
+                               Cursor="SizeAll">
+                            <Thumb.Template>
+                                <ControlTemplate>
+                                    <Canvas Width="24" Height="24" Opacity="0.9">
+                                        <Canvas Left="4" Top="4">
+                                            <Canvas Width="16" Height="16">
+                                                <Path Stroke="{DynamicResource TileForegroundBrush}"
+                                                      StrokeThickness="1"
+                                                      Data="M 3 13 L 13 3 M 7 13 L 13 7 M 11 13 L 13 11" />
+                                            </Canvas>
+                                        </Canvas>
+                                    </Canvas>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+</ResourceDictionary>

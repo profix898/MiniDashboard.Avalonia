@@ -1,0 +1,15 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dashboard="clr-namespace:MiniDashboard.Avalonia.Themes;assembly=MiniDashboard.Avalonia"
+             xmlns:dashboardGrid="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid.Themes;assembly=MiniDashboard.Avalonia.TreeDataGrid"
+             xmlns:dashboardScottPlot="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Themes;assembly=MiniDashboard.Avalonia.ScottPlot"
+             x:Class="DemoApp.App"
+             RequestedThemeVariant="Default">
+
+    <Application.Styles>
+        <FluentTheme />
+        <dashboard:MiniDashboardStyles />
+        <dashboardScottPlot:ScottPlotStyles />
+        <dashboardGrid:TreeDataGridStyles />
+    </Application.Styles>
+</Application>
