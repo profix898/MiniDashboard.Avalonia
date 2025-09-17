@@ -1,0 +1,2 @@
+# MiniDashboard.Avalonia
+MiniDashboard.Avalonia
