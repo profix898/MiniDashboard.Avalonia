@@ -1,0 +1,9 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:pie="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Pie"
+                    xmlns:scottPlot="clr-namespace:MiniDashboard.Avalonia.ScottPlot">
+
+    <ControlTheme x:Key="{x:Type pie:PiePlotTile}" TargetType="pie:PiePlotTile"
+                  BasedOn="{StaticResource {x:Type scottPlot:PlotTile}}" />
+
+</ResourceDictionary>

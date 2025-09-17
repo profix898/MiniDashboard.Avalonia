@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:data="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid">
+
+    <ControlTheme x:Key="{x:Type data:CsvGridTile}" TargetType="data:CsvGridTile"
+                  BasedOn="{StaticResource {x:Type data:TreeDataGridTile}}">
+        <Setter Property="TileHeader" Value="CSV" />
+    </ControlTheme>
+
+</ResourceDictionary>

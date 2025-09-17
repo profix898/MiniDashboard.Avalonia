@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Theme variant dictionaries -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="TileBackgroundBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="TileHeaderBackgroundBrush" Color="#FFF3F4F6" />
+            <SolidColorBrush x:Key="TileForegroundBrush" Color="#FF111827" />
+            <SolidColorBrush x:Key="TileBorderBrush" Color="#FFD1D5DB" />
+
+            <SolidColorBrush x:Key="DashboardColumnFillABrush" Color="#0AAAAAAA" />
+            <SolidColorBrush x:Key="DashboardColumnFillBBrush" Color="#04AAAAAA" />
+            <SolidColorBrush x:Key="DashboardRowFillBrush" Color="#06AAAAAA" />
+            <SolidColorBrush x:Key="DashboardGridLineBrush" Color="Transparent" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="TileBackgroundBrush" Color="#FF1F2937" />
+            <SolidColorBrush x:Key="TileHeaderBackgroundBrush" Color="#FF16202C" />
+            <SolidColorBrush x:Key="TileForegroundBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="TitleBorderBrush" Color="#FF24313C" />
+
+            <SolidColorBrush x:Key="DashboardColumnFillABrush" Color="#11282828" />
+            <SolidColorBrush x:Key="DashboardColumnFillBBrush" Color="#08141414" />
+            <SolidColorBrush x:Key="DashboardRowFillBrush" Color="#07101010" />
+            <SolidColorBrush x:Key="DashboardGridLineBrush" Color="Transparent" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

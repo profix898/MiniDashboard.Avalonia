@@ -1,0 +1,98 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:demoApp="clr-namespace:DemoApp"
+        xmlns:avalonia="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+        xmlns:treeDataGrid="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid;assembly=MiniDashboard.Avalonia.TreeDataGrid"
+        xmlns:scottPlot="clr-namespace:MiniDashboard.Avalonia.ScottPlot;assembly=MiniDashboard.Avalonia.ScottPlot"
+        xmlns:cartesian="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Cartesian;assembly=MiniDashboard.Avalonia.ScottPlot"
+        xmlns:pie="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Pie;assembly=MiniDashboard.Avalonia.ScottPlot"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
+        Width="1400" Height="900"
+        x:Class="DemoApp.MainWindow" x:DataType="demoApp:MainWindow"
+        Title="MiniDashboard.Avalonia">
+
+    <!-- Grid with spare cells to allow for experimenting with tile size/position -->
+    <avalonia:DashboardPanel Rows="10" Columns="15">
+
+        <!-- 1) Notes -->
+        <avalonia:TextTile GridX="0" GridY="0" GridW="2" GridH="2"
+                           TileHeader="TextTile"
+                           Text="Drag by header. Resize from corner."
+                           IsResizable="True"
+                           MinGridW="1" MinGridH="1" />
+
+        <!-- 2) Custom body -->
+        <avalonia:Tile GridX="2" GridY="0" GridW="3" GridH="2"
+                       TileHeader="Custom Body"
+                       IsResizable="True">
+            <StackPanel>
+                <TextBlock Text="CPU" />
+                <ProgressBar Minimum="0" Maximum="100" Value="40" />
+                <TextBlock Text="GPU" />
+                <ProgressBar Minimum="0" Maximum="100" Value="20" />
+            </StackPanel>
+        </avalonia:Tile>
+
+        <!-- 3) Custom header + body -->
+        <avalonia:Tile GridX="5" GridY="0" GridW="3" GridH="2"
+                       TileBackground="#0ea5e9" IsResizable="True">
+            <avalonia:Tile.HeaderContent>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Path Data="M2,2 L12,7 L2,12 Z" Width="14" Height="14" Stroke="DarkBlue" StrokeThickness="1.5" />
+                    <TextBlock Text="System" FontWeight="SemiBold" />
+                    <Button Content="⋯" Padding="2,0" MinWidth="24" />
+                </StackPanel>
+            </avalonia:Tile.HeaderContent>
+            <StackPanel>
+                <TextBlock Text="Body Text" />
+            </StackPanel>
+        </avalonia:Tile>
+
+        <!-- 4) Image tile -->
+        <avalonia:ImageTile GridX="8" GridY="0" GridW="4" GridH="2"
+                            TileHeader="Logo"
+                            SourceUri="avares://DemoApp/Assets/demo.png"
+                            Stretch="Uniform" />
+
+        <!-- 5) Radar -->
+        <scottPlot:PlotTile GridX="0" GridY="2" GridW="3" GridH="3"
+                            TileHeader="Radar"
+                            PlotBuilder="{Binding ChartsModel.BuildRadarPlot}" />
+
+        <!-- 6) LineChart -->
+        <cartesian:ScatterPlotTile GridX="5" GridY="2" GridW="4" GridH="3"
+                                   TileHeader="Scatter"
+                                   Ys="{Binding ChartsModel.SimpleSeries}" />
+
+        <!-- 7) Scatter (multiple traces) -->
+        <cartesian:ScatterPlotTile GridX="10" GridY="2" GridW="4" GridH="3"
+                                   TileHeader="Scatter (Multiple)"
+                                   Traces="{Binding ChartsModel.ScatterTraces}" />
+
+        <!-- 8) Histogram -->
+        <cartesian:HistogramPlotTile GridX="0" GridY="5" GridW="4" GridH="3"
+                                     TileHeader="Histogram"
+                                     Samples="{Binding ChartsModel.Random}"
+                                     BinCount="15" />
+
+        <!-- 9) PieChart -->
+        <pie:PiePlotTile GridX="4" GridY="5" GridW="4" GridH="3"
+                         TileHeader="Pie"
+                         Slices="{Binding ChartsModel.PieStatus}" />
+
+        <!-- 10) TreeDataGrid tiles -->
+        <!-- Flat -->
+        <treeDataGrid:TreeDataGridTile GridX="8" GridY="5" GridW="3" GridH="3"
+                                       TileHeader="People"
+                                       Source="{Binding FlatGrid.Source}" />
+
+        <!-- Hierarchical -->
+        <treeDataGrid:TreeDataGridTile GridX="12" GridY="5" GridW="3" GridH="3"
+                                       TileHeader="Folders"
+                                       Source="{Binding HierarchicalGrid.Source}" />
+
+    </avalonia:DashboardPanel>
+
+</Window>

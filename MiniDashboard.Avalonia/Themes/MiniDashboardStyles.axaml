@@ -1,0 +1,59 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:MiniDashboard.Avalonia.Converters"
+        xmlns:controls="clr-namespace:MiniDashboard.Avalonia"
+        x:Class="MiniDashboard.Avalonia.Themes.MiniDashboardStyles">
+
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Colors.axaml" />
+                <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Controls/Tile.axaml" />
+                <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Controls/TextTile.axaml" />
+                <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Controls/ImageTile.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:InverseBooleanConverter x:Key="InverseBoolConverter" />
+            <converters:TopCornersOnlyCornerRadiusConverter x:Key="TopCornersOnlyConverter" />
+        </ResourceDictionary>
+    </Styles.Resources>
+
+    <!-- Global DashboardPanel styling using themed brushes -->
+    <Style Selector="controls|DashboardPanel">
+        <Setter Property="ColumnFillA" Value="{DynamicResource DashboardColumnFillABrush}" />
+        <Setter Property="ColumnFillB" Value="{DynamicResource DashboardColumnFillBBrush}" />
+        <Setter Property="RowFill" Value="{DynamicResource DashboardRowFillBrush}" />
+        <Setter Property="GridLineBrush" Value="{DynamicResource DashboardGridLineBrush}" />
+        <Setter Property="TileMargin" Value="6" />
+        <Setter Property="TileCornerRadius" Value="6" />
+        <Setter Property="TileBorderBrush" Value="{DynamicResource TileBorderBrush}" />
+        <Setter Property="TileBorderThickness" Value="1" />
+    </Style>
+
+    <!-- Tiles bind Tile properties to global DashboardPanel properties -->
+    <Style Selector="controls|DashboardPanel > controls|Tile">
+        <Setter Property="CornerRadius"
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderBrush"
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderThickness"
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+    </Style>
+    <Style Selector="controls|DashboardPanel > controls|TextTile">
+        <Setter Property="CornerRadius"
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderBrush"
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderThickness"
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+    </Style>
+    <Style Selector="controls|DashboardPanel > controls|ImageTile">
+        <Setter Property="CornerRadius"
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderBrush"
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderThickness"
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+    </Style>
+
+</Styles>
