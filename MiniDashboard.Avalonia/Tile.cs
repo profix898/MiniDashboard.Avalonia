@@ -80,6 +80,10 @@ public class Tile : ContentControl
     private int _resizeStartGridX;
     private int _resizeStartGridY;
 
+    private IDisposable? _headerContentSubscription;
+    private IDisposable? _headerTemplateSubscription;
+    private IDisposable? _tileHeaderSubscription;
+
     static Tile()
     {
         // Keep tile position in sync with attached panel coordinates
@@ -223,6 +227,12 @@ public class Tile : ContentControl
         PushAllToDashboard();
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        DisposeHeaderSubscriptions();
+        base.OnDetachedFromVisualTree(e);
+    }
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
@@ -249,6 +259,8 @@ public class Tile : ContentControl
         // header presenter sync (pick HeaderContent or TileHeader string)
         if (e.NameScope.Find<ContentPresenter>("PART_HeaderPresenter") is { } cp)
         {
+            DisposeHeaderSubscriptions();
+
             void Sync()
             {
                 cp.ContentTemplate = HeaderTemplate;
@@ -257,10 +269,32 @@ public class Tile : ContentControl
 
             Sync();
 
-            HeaderContentProperty.Changed.Subscribe(_ => Sync());
-            HeaderTemplateProperty.Changed.Subscribe(_ => Sync());
-            TileHeaderProperty.Changed.Subscribe(_ => Sync());
+            _headerContentSubscription = HeaderContentProperty.Changed.Subscribe(args =>
+            {
+                if (args.Sender == this)
+                    Sync();
+            });
+            _headerTemplateSubscription = HeaderTemplateProperty.Changed.Subscribe(args =>
+            {
+                if (args.Sender == this)
+                    Sync();
+            });
+            _tileHeaderSubscription = TileHeaderProperty.Changed.Subscribe(args =>
+            {
+                if (args.Sender == this)
+                    Sync();
+            });
         }
+    }
+
+    private void DisposeHeaderSubscriptions()
+    {
+        _headerContentSubscription?.Dispose();
+        _headerTemplateSubscription?.Dispose();
+        _tileHeaderSubscription?.Dispose();
+        _headerContentSubscription = null;
+        _headerTemplateSubscription = null;
+        _tileHeaderSubscription = null;
     }
 
     private void OnResizeStarted(object? sender, VectorEventArgs e)

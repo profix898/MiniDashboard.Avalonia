@@ -7,7 +7,7 @@ using ScottPlot;
 namespace MiniDashboard.Avalonia.ScottPlot.Pie;
 
 /// <summary>
-/// Concrete pie chart tile that takes a sequence of <see cref="PieSlice"/> objects.
+/// Concrete pie chart tile that takes a sequence of <see cref="PieSlice" /> objects.
 /// </summary>
 public class PiePlotTile : PieChartPlotTile
 {
@@ -17,10 +17,10 @@ public class PiePlotTile : PieChartPlotTile
 
     static PiePlotTile()
     {
-        SlicesProperty.Changed.Subscribe(static e => ((PiePlotTile)e.Sender).Rebuild());
+        SlicesProperty.Changed.Subscribe(static e => ((PiePlotTile) e.Sender).Rebuild());
     }
 
-    /// <inheritdoc cref="SlicesProperty"/>
+    /// <inheritdoc cref="SlicesProperty" />
     public IEnumerable<PieSlice> Slices
     {
         get { return GetValue(SlicesProperty); }
@@ -28,7 +28,7 @@ public class PiePlotTile : PieChartPlotTile
     }
 
     /// <summary>
-    /// Update <see cref="PieChartPlotTile.DataBuilder"/> when slice collection changes.
+    /// Update <see cref="PieChartPlotTile.DataBuilder" /> when slice collection changes.
     /// </summary>
     private void Rebuild()
     {
@@ -38,6 +38,7 @@ public class PiePlotTile : PieChartPlotTile
             DataBuilder = avaPlot =>
             {
                 var pie = avaPlot.Plot.Add.Pie(slicesList);
+
                 // Auto-show legend if any slice has a label
                 if (pie.Slices.Any(s => !String.IsNullOrWhiteSpace(s.Label)))
                     avaPlot.Plot.ShowLegend();

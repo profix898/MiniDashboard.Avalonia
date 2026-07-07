@@ -1,37 +1,45 @@
-<Project InitialTargets="GitInfo">
-	<!-- GitInfo (SemVer) -->
-	<Target Name="GitInfo">
-		<Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
-			<Output TaskParameter="ConsoleOutput" PropertyName="GitSHA"/>
-		</Exec>
-		<PropertyGroup>
-			<MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
-			<MinVerDefaultPreReleaseIdentifiers>dev</MinVerDefaultPreReleaseIdentifiers>
-			<MinVerBuildMetadata Condition=" '$(Configuration)' == 'Debug' ">$(GitSHA)</MinVerBuildMetadata>
-			<MinVerVerbosity>normal</MinVerVerbosity>
-			<MinVerTagPrefix>v</MinVerTagPrefix>
-		</PropertyGroup>
-	</Target>
-	<Target Name="Versioning" AfterTargets="MinVer">
-		<PropertyGroup>
-			<BuildNumber>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::Parse("2025/09/01"))).TotalDays.ToString("0"))</BuildNumber>
-			<Version>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(BuildNumber)-dev+$(GitSHA)</Version>
-			<Version Condition=" '$(Configuration)' == 'Release' ">$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(BuildNumber)</Version>
-			<PackageVersion>$(Version)</PackageVersion>
-		</PropertyGroup>
-		<Message Text="Version: $(Version)" Importance="high"/>
-		<Message Text="FileVersion: $(FileVersion)" Importance="high"/>
-		<Message Text="AssemblyVersion: $(AssemblyVersion)" Importance="high"/>
-	</Target>
-	<!-- Project Defaults  -->
-	<PropertyGroup>
-		<LangVersion>13.0</LangVersion>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>false</ImplicitUsings>
-		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-	</PropertyGroup>
+<Project>
+  <!-- GitInfo (SemVer) -->
+  <Target Name="GitInfo" BeforeTargets="MinVer">
+    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitSHA" />
+    </Exec>
+  </Target>
+  <PropertyGroup>
+    <GitSHA>nogit</GitSHA>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Default / Minimal Version -->
+    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <MinVerMinimumMajorMinor>2.0</MinVerMinimumMajorMinor>
+    <MinVerDefaultPreReleaseIdentifiers>dev</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerBuildMetadata Condition=" '$(Configuration)' == 'Debug' ">$(GitSHA)</MinVerBuildMetadata>
+    <MinVerVerbosity>normal</MinVerVerbosity>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+  </PropertyGroup>
+  <Target Name="Versioning" AfterTargets="MinVer">
+    <PropertyGroup>
+      <BuildNumber>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::Parse("2026/07/01"))).TotalDays.ToString("0"))</BuildNumber>
+      <Version>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(BuildNumber)-dev+$(GitSHA)</Version>
+      <Version Condition=" '$(Configuration)' == 'Release' ">$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(BuildNumber)</Version>
+      <PackageVersion>$(Version)</PackageVersion>
+    </PropertyGroup>
+    <Message Text="Version: $(Version)" Importance="high" />
+    <Message Text="FileVersion: $(FileVersion)" Importance="high" />
+    <Message Text="AssemblyVersion: $(AssemblyVersion)" Importance="high" />
+  </Target>
+  <!-- Project Defaults  -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>false</ImplicitUsings>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
 	<!-- Assembly Info -->
+	<PropertyGroup>
+		<GitSHA>nogit</GitSHA>
+	</PropertyGroup>
 	<PropertyGroup>
 		<Product>MiniDashboard.Avalonia</Product>
 		<Description>MiniDashboard.Avalonia Package</Description>
@@ -39,13 +47,12 @@
 		<Company></Company>
 		<Copyright>Copyright &#169; Thilo Viereck 2025-$([System.DateTime]::Now.ToString(`yyyy`))</Copyright>
 		<DefaultLanguage>en-US</DefaultLanguage>
-		<PackageIcon>logo.png</PackageIcon>
+		<PackageIcon>Icon.png</PackageIcon>
 		<PackageReadmeFile>Readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/profix898/MiniDashboard.Avalonia</PackageProjectUrl>
 	</PropertyGroup>
 	<!-- Packaging -->
-	<!--<PropertyGroup Condition="'$(Configuration)' == 'Release'">-->
 	<PropertyGroup>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -55,7 +62,7 @@
 	</PropertyGroup>
 	<!-- NuGet Assets -->
 	<ItemGroup>
-    <None Include="$(SolutionDir)\logo.png" Pack="true" Visible="false" PackagePath="" />
-    <None Include="$(SolutionDir)\Readme.pkg.md" Pack="true" Visible="false" PackagePath="Readme.md" />
+    <None Include="$(MSBuildThisFileDirectory)Icon.png" Pack="true" Visible="false" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)README.pkg.md" Pack="true" Visible="false" PackagePath="Readme.md" />
   </ItemGroup>
 </Project>

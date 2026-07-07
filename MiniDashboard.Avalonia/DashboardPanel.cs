@@ -135,21 +135,20 @@ public class DashboardPanel : Panel
         AvaloniaProperty.RegisterAttached<DashboardPanel, Control, int>("Y");
 
     // Keep a mapping of last known valid position/size for each tile
-    private readonly Dictionary<Control, (int x, int y, int w, int h)> _lastValid = new Dictionary<Control, (int x, int y, int w, int h)>();
-
-    // Overlay control used to draw the snap preview
-    private readonly PreviewOverlay? _overlay;
+    private readonly Dictionary<Control, (int x, int y, int w, int h)> _lastValid = new();
+    private readonly PreviewOverlay _overlay;
 
     private Control?[,]? _cells;
+    private int _cellsColumns;
+    private int _cellsRows;
+    private (int x, int y, int w, int h, bool valid)? _preview;
 
     /// <summary>
-    /// Creates a new DashboardPanel and inserts the preview overlay into the visual tree.
+    /// Creates a new DashboardPanel and inserts the drawing overlay into the visual tree.
     /// </summary>
     public DashboardPanel()
     {
         _overlay = new PreviewOverlay { IsHitTestVisible = false };
-
-        // Insert overlay as first tile so it renders behind other tiles (we draw background grid here)
         Children.Insert(0, _overlay);
     }
 
@@ -360,7 +359,8 @@ public class DashboardPanel : Panel
         foreach (var tile in Children)
         {
             if (tile == _overlay)
-                continue; // Skip overlay from layout/measurement
+                continue;
+
             var w = Math.Max(1, GetW(tile));
             var h = Math.Max(1, GetH(tile));
             var size = new Size(cell.Width * w, cell.Height * h);
@@ -378,17 +378,20 @@ public class DashboardPanel : Panel
     {
         var cell = GetCellSize(finalSize);
         var margin = Math.Max(0, TileMargin);
+        var columns = GridColumns;
+        var rows = GridRows;
 
         BuildOccupancy(); // From last valid or current props
 
         foreach (var tile in Children)
         {
             if (tile == _overlay)
-                continue; // Skip overlay from grid arrangement
-            var x = Clamp(GetX(tile), 0, Columns - 1);
-            var y = Clamp(GetY(tile), 0, Rows - 1);
-            var w = Clamp(Math.Max(1, GetW(tile)), 1, Columns - x);
-            var h = Clamp(Math.Max(1, GetH(tile)), 1, Rows - y);
+                continue;
+
+            var x = Clamp(GetX(tile), 0, columns - 1);
+            var y = Clamp(GetY(tile), 0, rows - 1);
+            var w = Clamp(Math.Max(1, GetW(tile)), 1, columns - x);
+            var h = Clamp(Math.Max(1, GetH(tile)), 1, rows - y);
 
             // Ensure no overlap: if occupied, restore last valid or find nearest
             if (!IsFree(x, y, w, h, tile))
@@ -412,12 +415,8 @@ public class DashboardPanel : Panel
             Mark(x, y, w, h, tile);
         }
 
-        // Arrange overlay to cover entire panel so it can draw the preview on top
-        if (_overlay != null)
-        {
-            _overlay.Measure(finalSize);
-            _overlay.Arrange(new Rect(0, 0, finalSize.Width, finalSize.Height));
-        }
+        _overlay.Measure(finalSize);
+        _overlay.Arrange(new Rect(0, 0, finalSize.Width, finalSize.Height));
 
         return finalSize;
     }
@@ -427,11 +426,15 @@ public class DashboardPanel : Panel
     /// </summary>
     public (double Width, double Height) GetCellSize(Size reference)
     {
-        var cw = Columns > 0 ? reference.Width / Columns : reference.Width;
-        var ch = Rows > 0 ? reference.Height / Rows : reference.Height;
+        var cw = reference.Width / GridColumns;
+        var ch = reference.Height / GridRows;
 
         return (cw, ch);
     }
+
+    private int GridColumns => Math.Max(1, Columns);
+
+    private int GridRows => Math.Max(1, Rows);
 
     private static int Clamp(int i, int min, int max)
     {
@@ -446,9 +449,11 @@ public class DashboardPanel : Panel
     {
         var w = Math.Max(1, GetW(tile));
         var h = Math.Max(1, GetH(tile));
+        var columns = GridColumns;
+        var rows = GridRows;
 
-        targetX = Math.Clamp(targetX, 0, Columns - w);
-        targetY = Math.Clamp(targetY, 0, Rows - h);
+        targetX = Math.Clamp(targetX, 0, Math.Max(0, columns - w));
+        targetY = Math.Clamp(targetY, 0, Math.Max(0, rows - h));
 
         BuildOccupancy(tile);
         if (IsFree(targetX, targetY, w, h))
@@ -487,9 +492,11 @@ public class DashboardPanel : Panel
     {
         var x = Math.Max(0, GetX(tile));
         var y = Math.Max(0, GetY(tile));
+        var columns = GridColumns;
+        var rows = GridRows;
 
-        targetW = Math.Clamp(targetW, 1, Columns - x);
-        targetH = Math.Clamp(targetH, 1, Rows - y);
+        targetW = Math.Clamp(targetW, 1, Math.Max(1, columns - x));
+        targetH = Math.Clamp(targetH, 1, Math.Max(1, rows - y));
 
         BuildOccupancy(tile);
         if (IsFree(x, y, targetW, targetH))
@@ -530,13 +537,23 @@ public class DashboardPanel : Panel
 
     private void BuildOccupancy(Control? exceptControl = null)
     {
-        _cells = new Control?[Columns, Rows];
+        var columns = GridColumns;
+        var rows = GridRows;
+        if (_cells is null || _cellsColumns != columns || _cellsRows != rows)
+        {
+            _cells = new Control?[columns, rows];
+            _cellsColumns = columns;
+            _cellsRows = rows;
+        }
+        else
+            Array.Clear(_cells);
+
         foreach (var child in Children)
         {
             if (child == exceptControl)
                 continue;
             if (child == _overlay)
-                continue; // Ignore overlay for occupancy
+                continue;
 
             // Take last known valid if available (more stable)
             int x, y, w, h;
@@ -544,10 +561,10 @@ public class DashboardPanel : Panel
                 (x, y, w, h) = last;
             else
             {
-                (x, y, w, h) = (Clamp(GetX(child), 0, Columns - 1),
-                                Clamp(GetY(child), 0, Rows - 1),
-                                Clamp(Math.Max(1, GetW(child)), 1, Columns - GetX(child)),
-                                Clamp(Math.Max(1, GetH(child)), 1, Rows - GetY(child)));
+                (x, y, w, h) = (Clamp(GetX(child), 0, columns - 1),
+                                Clamp(GetY(child), 0, rows - 1),
+                                Clamp(Math.Max(1, GetW(child)), 1, Math.Max(1, columns - GetX(child))),
+                                Clamp(Math.Max(1, GetH(child)), 1, Math.Max(1, rows - GetY(child))));
             }
 
             Mark(x, y, w, h, child);
@@ -563,7 +580,7 @@ public class DashboardPanel : Panel
         {
             for (var cy = y; cy < y + h; cy++)
             {
-                if (cx >= 0 && cy >= 0 && cx < Columns && cy < Rows)
+                if (cx >= 0 && cy >= 0 && cx < _cellsColumns && cy < _cellsRows)
                     _cells[cx, cy] = control;
             }
         }
@@ -578,7 +595,7 @@ public class DashboardPanel : Panel
         {
             for (var cy = y; cy < y + h; cy++)
             {
-                if (cx < 0 || cy < 0 || cx >= Columns || cy >= Rows)
+                if (cx < 0 || cy < 0 || cx >= _cellsColumns || cy >= _cellsRows)
                     return false;
                 var occ = _cells[cx, cy];
                 if (occ is not null && occ != ignoreControl)
@@ -591,24 +608,26 @@ public class DashboardPanel : Panel
     // Find nearest free top-left position using expanding Manhattan radius
     private (int x, int y)? FindNearestFree(int aroundX, int aroundY, int w, int h)
     {
-        var maxR = Math.Max(Columns, Rows);
+        var columns = GridColumns;
+        var rows = GridRows;
+        var maxR = Math.Max(columns, rows);
         for (var r = 0; r <= maxR; r++)
         {
-            for (var x = Math.Max(0, aroundX - r); x <= Math.Min(Columns - w, aroundX + r); x++)
+            for (var x = Math.Max(0, aroundX - r); x <= Math.Min(columns - w, aroundX + r); x++)
             {
                 // Top and bottom bands
                 var y1 = Math.Max(0, aroundY - r);
-                var y2 = Math.Min(Rows - h, aroundY + r);
+                var y2 = Math.Min(rows - h, aroundY + r);
                 if (IsFree(x, y1, w, h))
                     return (x, y1);
                 if (IsFree(x, y2, w, h))
                     return (x, y2);
             }
-            for (var y = Math.Max(0, aroundY - r + 1); y <= Math.Min(Rows - h, aroundY + r - 1); y++)
+            for (var y = Math.Max(0, aroundY - r + 1); y <= Math.Min(rows - h, aroundY + r - 1); y++)
             {
                 // Left and right bands
                 var x1 = Math.Max(0, aroundX - r);
-                var x2 = Math.Min(Columns - w, aroundX + r);
+                var x2 = Math.Min(columns - w, aroundX + r);
                 if (IsFree(x1, y, w, h))
                     return (x1, y);
                 if (IsFree(x2, y, w, h))
@@ -625,7 +644,8 @@ public class DashboardPanel : Panel
     /// </summary>
     public void ShowSnapPreview(int x, int y, int w, int h, bool valid)
     {
-        _overlay?.SetPreview(x, y, w, h, valid);
+        _preview = (x, y, w, h, valid);
+        _overlay.InvalidateVisual();
     }
 
     /// <summary>
@@ -633,64 +653,39 @@ public class DashboardPanel : Panel
     /// </summary>
     public void HideSnapPreview()
     {
-        _overlay?.SetPreview();
+        _preview = null;
+        _overlay.InvalidateVisual();
     }
 
     #region Nested Type: PreviewOverlay
 
     private sealed class PreviewOverlay : Control
     {
-        private (int x, int y, int w, int h, bool valid)? _pos;
-
-        public void SetPreview((int x, int y, int w, int h, bool valid)? pos = null)
-        {
-            _pos = pos;
-            InvalidateVisual();
-        }
-
-        public void SetPreview(int x, int y, int w, int h, bool valid)
-        {
-            SetPreview((x, y, w, h, valid));
-        }
-
         public override void Render(DrawingContext context)
         {
             base.Render(context);
 
-            var panel = (DashboardPanel?) Parent;
-            var cols = Math.Max(1, panel?.Columns ?? 1);
-            var rows = Math.Max(1, panel?.Rows ?? 1);
+            if (Parent is not DashboardPanel panel)
+                return;
+
+            var cols = panel.GridColumns;
+            var rows = panel.GridRows;
             var cw = Bounds.Width / cols;
             var ch = Bounds.Height / rows;
 
-            // Column fills from properties
-            var colFillA = panel?.ColumnFillA ?? new SolidColorBrush(Color.FromArgb(40, 200, 200, 200));
-            var colFillB = panel?.ColumnFillB ?? new SolidColorBrush(Color.FromArgb(20, 200, 200, 200));
             for (var x = 0; x < cols; x++)
-            {
-                var r = new Rect(x * cw, 0, cw, Bounds.Height);
-                context.FillRectangle(x % 2 == 0 ? colFillA : colFillB, r);
-            }
+                context.FillRectangle(x % 2 == 0 ? panel.ColumnFillA : panel.ColumnFillB, new Rect(x * cw, 0, cw, Bounds.Height));
 
-            // Row fills from property
-            var rowFill = panel?.RowFill ?? new SolidColorBrush(Color.FromArgb(10, 150, 150, 150));
             for (var y = 0; y < rows; y++)
             {
-                var r = new Rect(0, y * ch, Bounds.Width, ch);
                 if (y % 2 == 0)
-                    context.FillRectangle(rowFill, r);
+                    context.FillRectangle(panel.RowFill, new Rect(0, y * ch, Bounds.Width, ch));
             }
 
-            // Grid lines if brush is not fully transparent
-            var gridBrush = panel?.GridLineBrush;
-            var drawGrid = !(gridBrush is SolidColorBrush scb && scb.Color.A == 0);
-            if (gridBrush is null)
-                drawGrid = false;
-
+            var drawGrid = panel.GridLineBrush is not SolidColorBrush solid || solid.Color.A != 0;
             if (drawGrid)
             {
-                var thickness = Math.Max(0.0, panel?.GridLineThickness ?? 1.0);
-                var gridPen = new Pen(gridBrush!, thickness);
+                var gridPen = new Pen(panel.GridLineBrush, Math.Max(0.0, panel.GridLineThickness));
                 for (var x = 1; x < cols; x++)
                 {
                     var gx = x * cw;
@@ -703,17 +698,11 @@ public class DashboardPanel : Panel
                 }
             }
 
-            // Draw preview on top if any
-            if (_pos is { } p)
+            if (panel._preview is { } preview)
             {
-                var rect = new Rect(p.x * cw, p.y * ch, p.w * cw, p.h * ch);
-
-                var fill = p.valid
-                    ? panel?.PreviewValidFill ?? new SolidColorBrush(Color.FromArgb(48, 34, 197, 94))
-                    : panel?.PreviewInvalidFill ?? new SolidColorBrush(Color.FromArgb(48, 239, 68, 68));
-                var stroke = p.valid
-                    ? panel?.PreviewValidStroke ?? new SolidColorBrush(Color.FromArgb(160, 34, 197, 94))
-                    : panel?.PreviewInvalidStroke ?? new SolidColorBrush(Color.FromArgb(160, 239, 68, 68));
+                var rect = new Rect(preview.x * cw, preview.y * ch, preview.w * cw, preview.h * ch);
+                var fill = preview.valid ? panel.PreviewValidFill : panel.PreviewInvalidFill;
+                var stroke = preview.valid ? panel.PreviewValidStroke : panel.PreviewInvalidStroke;
 
                 context.FillRectangle(fill, rect);
                 context.DrawRectangle(new Pen(stroke, 2, new DashStyle([4, 4], 0)), rect);

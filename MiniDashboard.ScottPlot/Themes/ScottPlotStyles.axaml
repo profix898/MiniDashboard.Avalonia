@@ -13,15 +13,21 @@
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Colors.axaml" />
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/PlotTile.axaml" />
 
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/CartesianPlotTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/CartesianPlotTile.axaml" />
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/BarsPlotTile.axaml" />
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/FinancialPlotTile.axaml" />
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/HistogramPlotTile.axaml" />
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/ScatterPlotTile.axaml" />
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/SignalPlotTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/FinancialPlotTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/HistogramPlotTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/ScatterPlotTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/SignalPlotTile.axaml" />
 
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/PiePlotTile.axaml" />
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/PieChartPlotTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.ScottPlot/Themes/Controls/PieChartPlotTile.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter" />

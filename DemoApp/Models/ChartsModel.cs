@@ -24,10 +24,8 @@ public class ChartsModel
 
     public IEnumerable<PieSlice> PieStatus { get; } = new List<PieSlice>
     {
-        new PieSlice { Value = 5, FillColor = Colors.Red, Label = "Red", LegendText = "R" },
-        new PieSlice { Value = 2, FillColor = Colors.Orange, Label = "Orange" },
-        new PieSlice { Value = 8, FillColor = Colors.Gold, Label = "Yellow" },
-        new PieSlice { Value = 4, FillColor = Colors.Green, Label = "Green", LegendText = "G" },
+        new PieSlice { Value = 5, FillColor = Colors.Red, Label = "Red", LegendText = "R" }, new PieSlice { Value = 2, FillColor = Colors.Orange, Label = "Orange" },
+        new PieSlice { Value = 8, FillColor = Colors.Gold, Label = "Yellow" }, new PieSlice { Value = 4, FillColor = Colors.Green, Label = "Green", LegendText = "G" },
         new PieSlice { Value = 8, FillColor = Colors.Blue, Label = "Blue", LegendText = "B" }
     };
 
@@ -40,24 +38,19 @@ public class ChartsModel
 
     public IEnumerable<double> SimpleSeries { get; } = new double[] { 12, 18, 15, 22, 30, 28, 35 };
 
-    public IEnumerable<(string Label, double Value)> Status { get; } = new (string, double)[]
-    {
-        ("200", 740), ("400", 35), ("404", 19), ("500", 6)
-    };
+    public IEnumerable<(string Label, double Value)> Status { get; } = new (string, double)[] { ("200", 740), ("400", 35), ("404", 19), ("500", 6) };
 
     // New: provide multiple scatter traces for the ScatterPlotTile example
     public IEnumerable<ScatterTrace> ScatterTraces { get; } = new List<ScatterTrace>
     {
         // Series A: sine-like
-        new ScatterTrace(
-            Enumerable.Range(0, 50).Select(i => (double)i),
-            Enumerable.Range(0, 50).Select(i => 10 + (5 * Math.Sin(i / 8.0)) + (System.Random.Shared.NextDouble() * 2)),
-            "Series A"),
+        new ScatterTrace(Enumerable.Range(0, 50).Select(i => (double) i),
+                         Enumerable.Range(0, 50).Select(i => 10 + (5 * Math.Sin(i / 8.0)) + (System.Random.Shared.NextDouble() * 2)),
+                         "Series A"),
 
         // Series B: cosine-like offset
-        new ScatterTrace(
-            Enumerable.Range(0, 50).Select(i => (double)i),
-            Enumerable.Range(0, 50).Select(i => 12 + (3 * Math.Cos(i / 6.0)) + (System.Random.Shared.NextDouble() * 2)),
-            "Series B")
+        new ScatterTrace(Enumerable.Range(0, 50).Select(i => (double) i),
+                         Enumerable.Range(0, 50).Select(i => 12 + (3 * Math.Cos(i / 6.0)) + (System.Random.Shared.NextDouble() * 2)),
+                         "Series B")
     };
 }

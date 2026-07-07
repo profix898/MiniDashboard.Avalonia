@@ -3,20 +3,22 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Models.TreeDataGrid;
 
 namespace MiniDashboard.Avalonia.TreeDataGrid;
 
 public class CsvGridTile : TreeDataGridTile
 {
+    private int _loadVersion;
+
     public static readonly StyledProperty<string?> FilePathProperty =
         AvaloniaProperty.Register<CsvGridTile, string?>(nameof(FilePath));
 
     static CsvGridTile()
     {
-        FilePathProperty.Changed.Subscribe(static e => ((CsvGridTile) e.Sender).LoadCsv());
+        FilePathProperty.Changed.Subscribe(static e => _ = ((CsvGridTile) e.Sender).LoadCsvAsync());
     }
 
     public string? FilePath
@@ -25,8 +27,9 @@ public class CsvGridTile : TreeDataGridTile
         set { SetValue(FilePathProperty, value); }
     }
 
-    private void LoadCsv()
+    private async Task LoadCsvAsync()
     {
+        var loadVersion = ++_loadVersion;
         if (String.IsNullOrWhiteSpace(FilePath) || !File.Exists(FilePath))
         {
             Source = null;
@@ -35,13 +38,13 @@ public class CsvGridTile : TreeDataGridTile
 
         try
         {
-            using var reader = new StreamReader(FilePath!);
+            var fileLines = await File.ReadAllLinesAsync(FilePath!).ConfigureAwait(true);
+            if (loadVersion != _loadVersion)
+                return;
+
             var lines = new List<string[]>();
-            while (!reader.EndOfStream)
+            foreach (var line in fileLines)
             {
-                var line = reader.ReadLine();
-                if (line is null)
-                    continue;
                 var parts = line.Split(','); // simple split, no quoting support
                 lines.Add(parts);
             }
@@ -65,24 +68,16 @@ public class CsvGridTile : TreeDataGridTile
 
             var obs = new ObservableCollection<Dictionary<string, string>>(rows);
 
-            // Create columns as the generic IColumn<T> type so they can be added to the source's Columns.
-            var columns = headers
-                          .Select(h => (IColumn<Dictionary<string, string>>)
-                                      new TextColumn<Dictionary<string, string>, string>(h, r => r.GetValueOrDefault(h, "")))
-                          .ToList();
-
             var src = new FlatTreeDataGridSource<Dictionary<string, string>>(obs);
-
-            // Columns is read-only; populate the ColumnList<T> collection instead of assigning it.
-            src.Columns.Clear();
-            foreach (var c in columns)
-                src.Columns.Add(c);
+            foreach (var header in headers)
+                src.WithTextColumn(header, row => row[header]);
 
             Source = src;
         }
         catch
         {
-            Source = null;
+            if (loadVersion == _loadVersion)
+                Source = null;
         }
     }
 }

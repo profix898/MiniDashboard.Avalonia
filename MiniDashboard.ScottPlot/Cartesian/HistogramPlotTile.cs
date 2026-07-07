@@ -30,34 +30,34 @@ public class HistogramPlotTile : CartesianPlotTile
     static HistogramPlotTile()
     {
         // Rebuild histogram when inputs change
-        SamplesProperty.Changed.Subscribe(static e => ((HistogramPlotTile)e.Sender).Rebuild());
-        BinCountProperty.Changed.Subscribe(static e => ((HistogramPlotTile)e.Sender).Rebuild());
-        NormalizeProperty.Changed.Subscribe(static e => ((HistogramPlotTile)e.Sender).Rebuild());
-        BarWidthScaleProperty.Changed.Subscribe(static e => ((HistogramPlotTile)e.Sender).Rebuild());
+        SamplesProperty.Changed.Subscribe(static e => ((HistogramPlotTile) e.Sender).Rebuild());
+        BinCountProperty.Changed.Subscribe(static e => ((HistogramPlotTile) e.Sender).Rebuild());
+        NormalizeProperty.Changed.Subscribe(static e => ((HistogramPlotTile) e.Sender).Rebuild());
+        BarWidthScaleProperty.Changed.Subscribe(static e => ((HistogramPlotTile) e.Sender).Rebuild());
     }
 
-    /// <inheritdoc cref="BinCountProperty"/>
+    /// <inheritdoc cref="BinCountProperty" />
     public int BinCount
     {
         get { return GetValue(BinCountProperty); }
         set { SetValue(BinCountProperty, value); }
     }
 
-    /// <inheritdoc cref="NormalizeProperty"/>
+    /// <inheritdoc cref="NormalizeProperty" />
     public bool Normalize
     {
         get { return GetValue(NormalizeProperty); }
         set { SetValue(NormalizeProperty, value); }
     }
 
-    /// <inheritdoc cref="SamplesProperty"/>
+    /// <inheritdoc cref="SamplesProperty" />
     public IEnumerable<double>? Samples
     {
         get { return GetValue(SamplesProperty); }
         set { SetValue(SamplesProperty, value); }
     }
 
-    /// <inheritdoc cref="BarWidthScaleProperty"/>
+    /// <inheritdoc cref="BarWidthScaleProperty" />
     public double BarWidthScale
     {
         get => GetValue(BarWidthScaleProperty);
@@ -90,10 +90,9 @@ public class HistogramPlotTile : CartesianPlotTile
             {
                 var scale = Math.Max(0, BarWidthScale);
                 foreach (var bar in barPlot.Bars)
-                {
+
                     // hist.FirstBinSize gives the bin width; multiply by scale for the actual bar size
                     bar.Size = hist.FirstBinSize * scale;
-                }
             }
 
             // Remove bottom margin so bars sit flush with the axis (same as example)

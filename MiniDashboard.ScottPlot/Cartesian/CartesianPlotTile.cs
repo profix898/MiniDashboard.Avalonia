@@ -6,14 +6,14 @@ using ScottPlot.Avalonia;
 namespace MiniDashboard.Avalonia.ScottPlot.Cartesian;
 
 /// <summary>
-/// Base class for Cartesian (XY) ScottPlot tiles. Combines a data layer delegate (<see cref="DataBuilder"/>)
-/// with styling and axis configuration producing the final <see cref="PlotBuilder"/> executed by <see cref="PlotTile"/>.
+/// Base class for Cartesian (XY) ScottPlot tiles. Combines a data layer delegate (<see cref="DataBuilder" />)
+/// with styling and axis configuration producing the final <see cref="PlotTile.PlotBuilder" /> executed by <see cref="PlotTile" />.
 /// </summary>
 public class CartesianPlotTile : PlotTile
 {
     // --- Data and behavior configuration styled properties ---
 
-    /// <summary>Whether to automatically clear the plot before invoking <see cref="DataBuilder"/>.</summary>
+    /// <summary>Whether to automatically clear the plot before invoking <see cref="DataBuilder" />.</summary>
     public static readonly StyledProperty<bool> AutoClearProperty =
         AvaloniaProperty.Register<CartesianPlotTile, bool>(nameof(AutoClear), true);
 
@@ -79,122 +79,122 @@ public class CartesianPlotTile : PlotTile
     static CartesianPlotTile()
     {
         // Re-compose whenever any styling or data source changes
-        DataBuilderProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        AutoClearProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        TitleProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        XLabelProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        YLabelProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        XMinProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        XMaxProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        YMinProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        YMaxProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        ShowGridProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        DefaultColorProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        DefaultLineWidthProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        DefaultMarkerShapeProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        DefaultMarkerSizeProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
-        DefaultLinePatternProperty.Changed.Subscribe(static e => ((CartesianPlotTile)e.Sender).ComposePlotBuilder());
+        DataBuilderProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        AutoClearProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        TitleProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        XLabelProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        YLabelProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        XMinProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        XMaxProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        YMinProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        YMaxProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        ShowGridProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        DefaultColorProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        DefaultLineWidthProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        DefaultMarkerShapeProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        DefaultMarkerSizeProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
+        DefaultLinePatternProperty.Changed.Subscribe(static e => ((CartesianPlotTile) e.Sender).ComposePlotBuilder());
     }
 
-    /// <inheritdoc cref="AutoClearProperty"/>
+    /// <inheritdoc cref="AutoClearProperty" />
     public bool AutoClear
     {
         get { return GetValue(AutoClearProperty); }
         set { SetValue(AutoClearProperty, value); }
     }
 
-    /// <inheritdoc cref="DataBuilderProperty"/>
+    /// <inheritdoc cref="DataBuilderProperty" />
     public Action<AvaPlot>? DataBuilder
     {
         get { return GetValue(DataBuilderProperty); }
         set { SetValue(DataBuilderProperty, value); }
     }
 
-    /// <inheritdoc cref="DefaultColorProperty"/>
+    /// <inheritdoc cref="DefaultColorProperty" />
     public Color? DefaultColor
     {
         get { return GetValue(DefaultColorProperty); }
         set { SetValue(DefaultColorProperty, value); }
     }
 
-    /// <inheritdoc cref="DefaultLinePatternProperty"/>
+    /// <inheritdoc cref="DefaultLinePatternProperty" />
     public LinePattern DefaultLinePattern
     {
         get { return GetValue(DefaultLinePatternProperty); }
         set { SetValue(DefaultLinePatternProperty, value); }
     }
 
-    /// <inheritdoc cref="DefaultLineWidthProperty"/>
+    /// <inheritdoc cref="DefaultLineWidthProperty" />
     public double DefaultLineWidth
     {
         get { return GetValue(DefaultLineWidthProperty); }
         set { SetValue(DefaultLineWidthProperty, value); }
     }
 
-    /// <inheritdoc cref="DefaultMarkerShapeProperty"/>
+    /// <inheritdoc cref="DefaultMarkerShapeProperty" />
     public MarkerShape DefaultMarkerShape
     {
         get { return GetValue(DefaultMarkerShapeProperty); }
         set { SetValue(DefaultMarkerShapeProperty, value); }
     }
 
-    /// <inheritdoc cref="DefaultMarkerSizeProperty"/>
+    /// <inheritdoc cref="DefaultMarkerSizeProperty" />
     public double DefaultMarkerSize
     {
         get { return GetValue(DefaultMarkerSizeProperty); }
         set { SetValue(DefaultMarkerSizeProperty, value); }
     }
 
-    /// <inheritdoc cref="ShowGridProperty"/>
+    /// <inheritdoc cref="ShowGridProperty" />
     public bool ShowGrid
     {
         get { return GetValue(ShowGridProperty); }
         set { SetValue(ShowGridProperty, value); }
     }
 
-    /// <inheritdoc cref="TitleProperty"/>
+    /// <inheritdoc cref="TitleProperty" />
     public string Title
     {
         get { return GetValue(TitleProperty); }
         set { SetValue(TitleProperty, value); }
     }
 
-    /// <inheritdoc cref="XLabelProperty"/>
+    /// <inheritdoc cref="XLabelProperty" />
     public string XLabel
     {
         get { return GetValue(XLabelProperty); }
         set { SetValue(XLabelProperty, value); }
     }
 
-    /// <inheritdoc cref="XMaxProperty"/>
+    /// <inheritdoc cref="XMaxProperty" />
     public double? XMax
     {
         get { return GetValue(XMaxProperty); }
         set { SetValue(XMaxProperty, value); }
     }
 
-    /// <inheritdoc cref="XMinProperty"/>
+    /// <inheritdoc cref="XMinProperty" />
     public double? XMin
     {
         get { return GetValue(XMinProperty); }
         set { SetValue(XMinProperty, value); }
     }
 
-    /// <inheritdoc cref="YLabelProperty"/>
+    /// <inheritdoc cref="YLabelProperty" />
     public string YLabel
     {
         get { return GetValue(YLabelProperty); }
         set { SetValue(YLabelProperty, value); }
     }
 
-    /// <inheritdoc cref="YMaxProperty"/>
+    /// <inheritdoc cref="YMaxProperty" />
     public double? YMax
     {
         get { return GetValue(YMaxProperty); }
         set { SetValue(YMaxProperty, value); }
     }
 
-    /// <inheritdoc cref="YMinProperty"/>
+    /// <inheritdoc cref="YMinProperty" />
     public double? YMin
     {
         get { return GetValue(YMinProperty); }
@@ -202,7 +202,7 @@ public class CartesianPlotTile : PlotTile
     }
 
     /// <summary>
-    /// Compose and assign the final <see cref="PlotTile.PlotBuilder"/> combining data layer and styling.
+    /// Compose and assign the final <see cref="PlotTile.PlotBuilder" /> combining data layer and styling.
     /// </summary>
     protected void ComposePlotBuilder()
     {

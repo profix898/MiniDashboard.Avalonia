@@ -9,16 +9,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        FlatGrid = new TreeDataGridFlatModel();
-        HierarchicalGrid = new TreeDataGridHierarchicalModel();
         ChartsModel = new ChartsModel();
 
         DataContext = this;
     }
 
     public ChartsModel ChartsModel { get; set; }
-
-    public TreeDataGridFlatModel FlatGrid { get; set; }
-
-    public TreeDataGridHierarchicalModel HierarchicalGrid { get; set; }
 }

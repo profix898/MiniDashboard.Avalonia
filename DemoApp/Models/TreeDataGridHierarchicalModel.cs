@@ -1,6 +1,5 @@
 ﻿using System.Collections.ObjectModel;
 using Avalonia.Controls;
-using Avalonia.Controls.Models.TreeDataGrid;
 
 namespace DemoApp.Models;
 
@@ -15,12 +14,8 @@ public class TreeDataGridHierarchicalModel
 {
     public TreeDataGridHierarchicalModel()
     {
-        var columns = new IColumn<Folder>[] { new HierarchicalExpanderColumn<Folder>(new TextColumn<Folder, string>("Folder", f => f.Name), f => f.Children) };
-
         Source = new HierarchicalTreeDataGridSource<Folder>([Root]);
-        Source.Columns.Clear();
-        foreach (var c in columns)
-            Source.Columns.Add(c);
+        Source.WithHierarchicalExpanderTextColumn("Folder", f => f.Name, f => f.Children);
     }
 
     public Folder Root { get; } = new Folder

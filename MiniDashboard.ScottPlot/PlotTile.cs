@@ -7,7 +7,7 @@ using ScottPlot.Avalonia;
 namespace MiniDashboard.Avalonia.ScottPlot;
 
 /// <summary>
-/// Base tile that hosts an <see cref="AvaPlot"/> and exposes a <see cref="PlotBuilder"/> delegate.
+/// Base tile that hosts an <see cref="AvaPlot" /> and exposes a <see cref="PlotBuilder" /> delegate.
 /// </summary>
 public class PlotTile : Tile
 {
@@ -17,8 +17,15 @@ public class PlotTile : Tile
     public static readonly StyledProperty<Action<AvaPlot>?> PlotBuilderProperty =
         AvaloniaProperty.Register<PlotTile, Action<AvaPlot>?>(nameof(PlotBuilder));
 
+    private AvaPlot? _avaPlot;
+
+    static PlotTile()
+    {
+        PlotBuilderProperty.Changed.Subscribe(static e => ((PlotTile) e.Sender).ApplyPlotBuilder());
+    }
+
     /// <summary>
-    /// Delegate used to populate the <see cref="AvaPlot"/> control with plottables and styling.
+    /// Delegate used to populate the <see cref="AvaPlot" /> control with plottables and styling.
     /// </summary>
     public Action<AvaPlot>? PlotBuilder
     {
@@ -34,11 +41,16 @@ public class PlotTile : Tile
     {
         base.OnApplyTemplate(e);
 
-        // Locate template part containing the ScottPlot control
-        var avaPlot = e.NameScope.Find<AvaPlot>("PART_AvaPlot");
+        _avaPlot = e.NameScope.Find<AvaPlot>("PART_AvaPlot");
+        ApplyPlotBuilder();
+    }
 
-        // Execute builder if present
-        if (avaPlot != null && PlotBuilder != null)
-            PlotBuilder(avaPlot);
+    private void ApplyPlotBuilder()
+    {
+        if (_avaPlot is null || PlotBuilder is null)
+            return;
+
+        PlotBuilder(_avaPlot);
+        _avaPlot.Refresh();
     }
 }
