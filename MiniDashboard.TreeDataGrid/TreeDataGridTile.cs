@@ -13,8 +13,8 @@ public class TreeDataGridTile : Tile
         AvaloniaProperty.Register<TreeDataGridTile, bool>(nameof(CanUserResizeColumns), true);
 
     // Styled property backing field for the tree data source.
-    public static readonly StyledProperty<ITreeDataGridSource?> SourceProperty =
-        AvaloniaProperty.Register<TreeDataGridTile, ITreeDataGridSource?>(nameof(Source));
+    public static readonly StyledProperty<TreeDataGridSource?> SourceProperty =
+        AvaloniaProperty.Register<TreeDataGridTile, TreeDataGridSource?>(nameof(Source));
 
     /// <summary>
     /// Gets or sets a value indicating whether the user can resize columns in the grid.
@@ -28,7 +28,7 @@ public class TreeDataGridTile : Tile
     /// <summary>
     /// Gets or sets the data source used by the tree data grid inside this tile.
     /// </summary>
-    public ITreeDataGridSource? Source
+    public TreeDataGridSource? Source
     {
         get { return GetValue(SourceProperty); }
         set { SetValue(SourceProperty, value); }

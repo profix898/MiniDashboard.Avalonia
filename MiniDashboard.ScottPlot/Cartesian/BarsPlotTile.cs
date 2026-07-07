@@ -14,37 +14,37 @@ public class BarsPlotTile : CartesianPlotTile
     public static readonly StyledProperty<double> BarWidthProperty =
         AvaloniaProperty.Register<BarsPlotTile, double>(nameof(BarWidth), 0.8);
 
-    /// <summary>Explicit (X,Y) pairs. If set overrides <see cref="Values"/>.</summary>
+    /// <summary>Explicit (X,Y) pairs. If set overrides <see cref="Values" />.</summary>
     public static readonly StyledProperty<IEnumerable<(double X, double Y)>?> PointsProperty =
         AvaloniaProperty.Register<BarsPlotTile, IEnumerable<(double X, double Y)>?>(nameof(Points));
 
-    /// <summary>Sequence of Y values (X becomes index). Ignored if <see cref="Points"/> provided.</summary>
+    /// <summary>Sequence of Y values (X becomes index). Ignored if <see cref="Points" /> provided.</summary>
     public static readonly StyledProperty<IEnumerable<double>?> ValuesProperty =
         AvaloniaProperty.Register<BarsPlotTile, IEnumerable<double>?>(nameof(Values));
 
     static BarsPlotTile()
     {
         // Rebuild data layer on any relevant change
-        PointsProperty.Changed.Subscribe(static e => ((BarsPlotTile)e.Sender).Rebuild());
-        ValuesProperty.Changed.Subscribe(static e => ((BarsPlotTile)e.Sender).Rebuild());
-        BarWidthProperty.Changed.Subscribe(static e => ((BarsPlotTile)e.Sender).Rebuild());
+        PointsProperty.Changed.Subscribe(static e => ((BarsPlotTile) e.Sender).Rebuild());
+        ValuesProperty.Changed.Subscribe(static e => ((BarsPlotTile) e.Sender).Rebuild());
+        BarWidthProperty.Changed.Subscribe(static e => ((BarsPlotTile) e.Sender).Rebuild());
     }
 
-    /// <inheritdoc cref="BarWidthProperty"/>
+    /// <inheritdoc cref="BarWidthProperty" />
     public double BarWidth
     {
         get { return GetValue(BarWidthProperty); }
         set { SetValue(BarWidthProperty, value); }
     }
 
-    /// <inheritdoc cref="PointsProperty"/>
+    /// <inheritdoc cref="PointsProperty" />
     public IEnumerable<(double X, double Y)>? Points
     {
         get { return GetValue(PointsProperty); }
         set { SetValue(PointsProperty, value); }
     }
 
-    /// <inheritdoc cref="ValuesProperty"/>
+    /// <inheritdoc cref="ValuesProperty" />
     public IEnumerable<double>? Values
     {
         get { return GetValue(ValuesProperty); }
@@ -52,7 +52,7 @@ public class BarsPlotTile : CartesianPlotTile
     }
 
     /// <summary>
-    /// Decide which input source to use and produce an appropriate <see cref="CartesianPlotTile.DataBuilder"/>.
+    /// Decide which input source to use and produce an appropriate <see cref="CartesianPlotTile.DataBuilder" />.
     /// </summary>
     private void Rebuild()
     {

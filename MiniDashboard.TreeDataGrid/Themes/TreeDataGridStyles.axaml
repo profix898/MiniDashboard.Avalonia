@@ -12,8 +12,10 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia.TreeDataGrid/Themes/Colors.axaml" />
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.TreeDataGrid/Themes/Controls/TreeDataGridTile.axaml" />
-                <ResourceInclude Source="avares://MiniDashboard.Avalonia.TreeDataGrid/Themes/Controls/CsvGridTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.TreeDataGrid/Themes/Controls/TreeDataGridTile.axaml" />
+                <ResourceInclude
+                    Source="avares://MiniDashboard.Avalonia.TreeDataGrid/Themes/Controls/CsvGridTile.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter" />

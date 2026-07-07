@@ -5,7 +5,7 @@ using ScottPlot.Avalonia;
 namespace MiniDashboard.Avalonia.ScottPlot.Pie;
 
 /// <summary>
-/// Base pie chart tile using a delegate to populate slices and applying title & legend rules.
+/// Base pie chart tile using a delegate to populate slices and applying title and legend rules.
 /// </summary>
 public class PieChartPlotTile : PlotTile
 {
@@ -23,26 +23,26 @@ public class PieChartPlotTile : PlotTile
 
     static PieChartPlotTile()
     {
-        DataBuilderProperty.Changed.Subscribe(static e => ((PieChartPlotTile)e.Sender).ComposePlotBuilder());
-        TitleProperty.Changed.Subscribe(static e => ((PieChartPlotTile)e.Sender).ComposePlotBuilder());
-        ShowLegendProperty.Changed.Subscribe(static e => ((PieChartPlotTile)e.Sender).ComposePlotBuilder());
+        DataBuilderProperty.Changed.Subscribe(static e => ((PieChartPlotTile) e.Sender).ComposePlotBuilder());
+        TitleProperty.Changed.Subscribe(static e => ((PieChartPlotTile) e.Sender).ComposePlotBuilder());
+        ShowLegendProperty.Changed.Subscribe(static e => ((PieChartPlotTile) e.Sender).ComposePlotBuilder());
     }
 
-    /// <inheritdoc cref="DataBuilderProperty"/>
+    /// <inheritdoc cref="DataBuilderProperty" />
     public Action<AvaPlot>? DataBuilder
     {
         get { return GetValue(DataBuilderProperty); }
         set { SetValue(DataBuilderProperty, value); }
     }
 
-    /// <inheritdoc cref="ShowLegendProperty"/>
+    /// <inheritdoc cref="ShowLegendProperty" />
     public bool? ShowLegend
     {
         get { return GetValue(ShowLegendProperty); }
         set { SetValue(ShowLegendProperty, value); }
     }
 
-    /// <inheritdoc cref="TitleProperty"/>
+    /// <inheritdoc cref="TitleProperty" />
     public string? Title
     {
         get { return GetValue(TitleProperty); }

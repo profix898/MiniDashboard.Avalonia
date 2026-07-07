@@ -16,10 +16,10 @@ public class FinancialPlotTile : CartesianPlotTile
 
     static FinancialPlotTile()
     {
-        OhlcProperty.Changed.Subscribe(static e => ((FinancialPlotTile)e.Sender).Rebuild());
+        OhlcProperty.Changed.Subscribe(static e => ((FinancialPlotTile) e.Sender).Rebuild());
     }
 
-    /// <inheritdoc cref="OhlcProperty"/>
+    /// <inheritdoc cref="OhlcProperty" />
     public IEnumerable<(double X, double Open, double High, double Low, double Close)>? Ohlc
     {
         get { return GetValue(OhlcProperty); }
@@ -45,10 +45,13 @@ public class FinancialPlotTile : CartesianPlotTile
             foreach (var item in data)
             {
                 var x = item.X;
+
                 // High-low vertical line
                 var hiLo = avaPlot.Plot.Add.Line(x, item.Low, x, item.High);
+
                 // Open tick (left)
                 var open = avaPlot.Plot.Add.Line(x - 0.2, item.Open, x, item.Open);
+
                 // Close tick (right)
                 var close = avaPlot.Plot.Add.Line(x, item.Close, x + 0.2, item.Close);
                 if (DefaultColor != null)

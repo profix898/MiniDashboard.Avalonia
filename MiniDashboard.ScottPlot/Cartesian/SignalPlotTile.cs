@@ -29,34 +29,34 @@ public class SignalPlotTile : CartesianPlotTile
     static SignalPlotTile()
     {
         // Trigger data rebuild on relevant changes
-        ValuesProperty.Changed.Subscribe(static e => ((SignalPlotTile)e.Sender).Rebuild());
-        SamplePeriodProperty.Changed.Subscribe(static e => ((SignalPlotTile)e.Sender).Rebuild());
-        UseAggregationProperty.Changed.Subscribe(static e => ((SignalPlotTile)e.Sender).Rebuild());
-        AggregationThresholdProperty.Changed.Subscribe(static e => ((SignalPlotTile)e.Sender).Rebuild());
+        ValuesProperty.Changed.Subscribe(static e => ((SignalPlotTile) e.Sender).Rebuild());
+        SamplePeriodProperty.Changed.Subscribe(static e => ((SignalPlotTile) e.Sender).Rebuild());
+        UseAggregationProperty.Changed.Subscribe(static e => ((SignalPlotTile) e.Sender).Rebuild());
+        AggregationThresholdProperty.Changed.Subscribe(static e => ((SignalPlotTile) e.Sender).Rebuild());
     }
 
-    /// <inheritdoc cref="AggregationThresholdProperty"/>
+    /// <inheritdoc cref="AggregationThresholdProperty" />
     public int AggregationThreshold
     {
         get { return GetValue(AggregationThresholdProperty); }
         set { SetValue(AggregationThresholdProperty, value); }
     }
 
-    /// <inheritdoc cref="SamplePeriodProperty"/>
+    /// <inheritdoc cref="SamplePeriodProperty" />
     public double SamplePeriod
     {
         get { return GetValue(SamplePeriodProperty); }
         set { SetValue(SamplePeriodProperty, value); }
     }
 
-    /// <inheritdoc cref="UseAggregationProperty"/>
+    /// <inheritdoc cref="UseAggregationProperty" />
     public bool UseAggregation
     {
         get { return GetValue(UseAggregationProperty); }
         set { SetValue(UseAggregationProperty, value); }
     }
 
-    /// <inheritdoc cref="ValuesProperty"/>
+    /// <inheritdoc cref="ValuesProperty" />
     public IEnumerable<double>? Values
     {
         get { return GetValue(ValuesProperty); }

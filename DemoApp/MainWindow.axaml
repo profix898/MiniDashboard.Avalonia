@@ -4,7 +4,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:demoApp="clr-namespace:DemoApp"
         xmlns:avalonia="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
-        xmlns:treeDataGrid="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid;assembly=MiniDashboard.Avalonia.TreeDataGrid"
         xmlns:scottPlot="clr-namespace:MiniDashboard.Avalonia.ScottPlot;assembly=MiniDashboard.Avalonia.ScottPlot"
         xmlns:cartesian="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Cartesian;assembly=MiniDashboard.Avalonia.ScottPlot"
         xmlns:pie="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Pie;assembly=MiniDashboard.Avalonia.ScottPlot"
@@ -81,17 +80,6 @@
         <pie:PiePlotTile GridX="4" GridY="5" GridW="4" GridH="3"
                          TileHeader="Pie"
                          Slices="{Binding ChartsModel.PieStatus}" />
-
-        <!-- 10) TreeDataGrid tiles -->
-        <!-- Flat -->
-        <treeDataGrid:TreeDataGridTile GridX="8" GridY="5" GridW="3" GridH="3"
-                                       TileHeader="People"
-                                       Source="{Binding FlatGrid.Source}" />
-
-        <!-- Hierarchical -->
-        <treeDataGrid:TreeDataGridTile GridX="12" GridY="5" GridW="3" GridH="3"
-                                       TileHeader="Folders"
-                                       Source="{Binding HierarchicalGrid.Source}" />
 
     </avalonia:DashboardPanel>
 

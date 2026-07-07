@@ -18,7 +18,7 @@ public sealed class ScatterTrace
     /// <param name="y">Y data (must match length of X).</param>
     /// <param name="label">Optional legend label.</param>
     /// <exception cref="ArgumentException">Thrown if lengths mismatch.</exception>
-    public ScatterTrace(IEnumerable<double> x, IEnumerable<double> y, string label = null)
+    public ScatterTrace(IEnumerable<double> x, IEnumerable<double> y, string? label = null)
     {
         X = x is double[] xa ? xa : x.ToArray(); // Avoid extra allocation when already array
         Y = y is double[] ya ? ya : y.ToArray();
@@ -30,7 +30,7 @@ public sealed class ScatterTrace
     /// <summary>
     /// Create a trace from pre-existing arrays (referenced directly without copy).
     /// </summary>
-    public ScatterTrace(double[] x, double[] y, string label = null)
+    public ScatterTrace(double[] x, double[] y, string? label = null)
     {
         if (x.Length != y.Length)
             throw new ArgumentException("X and Y length mismatch");
@@ -43,7 +43,7 @@ public sealed class ScatterTrace
     public Color Color { get; init; }
 
     /// <summary>Legend label text.</summary>
-    public string Label { get; init; }
+    public string? Label { get; init; }
 
     /// <summary>Optional line pattern override.</summary>
     public LinePattern LinePattern { get; init; }
@@ -63,6 +63,6 @@ public sealed class ScatterTrace
     /// <summary>X data points.</summary>
     public double[] X { get; }
 
-    /// <summary>Y data points (same length as <see cref="X"/>).</summary>
+    /// <summary>Y data points (same length as <see cref="X" />).</summary>
     public double[] Y { get; }
 }

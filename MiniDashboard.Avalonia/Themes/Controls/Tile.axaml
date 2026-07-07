@@ -50,30 +50,25 @@
                                IsVisible="{TemplateBinding IsResizable}"
                                HorizontalAlignment="Right"
                                VerticalAlignment="Bottom"
-                               Margin="-6"
-                               Width="40" Height="40"
+                               Margin="0"
+                               Width="48" Height="48"
                                Background="Transparent"
-                               Cursor="SizeAll"
-                               Opacity="0"
+                               Cursor="BottomRightCorner"
                                ZIndex="1000" />
 
                         <Thumb Grid.Row="1" x:Name="PART_ResizeThumb"
                                IsVisible="{TemplateBinding IsResizable}"
                                HorizontalAlignment="Right"
                                VerticalAlignment="Bottom"
-                               Margin="2"
-                               Width="16" Height="16"
-                               Cursor="SizeAll">
+                               Margin="3"
+                               Width="18" Height="18"
+                               Cursor="BottomRightCorner">
                             <Thumb.Template>
                                 <ControlTemplate>
-                                    <Canvas Width="24" Height="24" Opacity="0.9">
-                                        <Canvas Left="4" Top="4">
-                                            <Canvas Width="16" Height="16">
-                                                <Path Stroke="{DynamicResource TileForegroundBrush}"
-                                                      StrokeThickness="1"
-                                                      Data="M 3 13 L 13 3 M 7 13 L 13 7 M 11 13 L 13 11" />
-                                            </Canvas>
-                                        </Canvas>
+                                    <Canvas Width="18" Height="18">
+                                        <Path Stroke="{DynamicResource TileForegroundBrush}"
+                                              StrokeThickness="1.5"
+                                              Data="M 4 15 L 15 4 M 8 15 L 15 8 M 12 15 L 15 12" />
                                     </Canvas>
                                 </ControlTemplate>
                             </Thumb.Template>

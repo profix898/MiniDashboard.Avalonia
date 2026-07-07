@@ -56,4 +56,18 @@
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
     </Style>
 
+    <!-- Resize grip is subtle at rest and reveals on hover to guide the eye to the active corner.
+         Uses :is() so it applies to every tile type (TextTile, ImageTile, PlotTile, TreeDataGridTile, ...) across all assemblies. -->
+    <Style Selector=":is(controls|Tile) /template/ Thumb#PART_ResizeThumb">
+        <Setter Property="Opacity" Value="0.45" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector=":is(controls|Tile):pointerover /template/ Thumb#PART_ResizeThumb">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+
 </Styles>

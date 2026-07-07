@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -13,6 +14,7 @@ namespace MiniDashboard.Avalonia;
 public class ImageTile : Tile
 {
     // You can bind either ImageSource or SourceUri.
+    private int _loadVersion;
 
     /// <summary>
     /// Direct image source (bitmap) to display.
@@ -41,7 +43,7 @@ public class ImageTile : Tile
     static ImageTile()
     {
         // Reload image when the SourceUri changes
-        SourceUriProperty.Changed.Subscribe(static e => ((ImageTile) e.Sender).LoadFromUri());
+        SourceUriProperty.Changed.Subscribe(static e => _ = ((ImageTile) e.Sender).LoadFromUriAsync());
     }
 
     /// <summary>
@@ -84,8 +86,9 @@ public class ImageTile : Tile
     /// Try to load the image from <see cref="SourceUri" /> into <see cref="ImageSource" />.
     /// Supports avares:// and resm:// embedded assets and local file paths. HTTP/HTTPS is skipped.
     /// </summary>
-    private void LoadFromUri()
+    private async Task LoadFromUriAsync()
     {
+        var loadVersion = ++_loadVersion;
         if (String.IsNullOrWhiteSpace(SourceUri))
         {
             // Clear image if no URI provided
@@ -101,6 +104,8 @@ public class ImageTile : Tile
             if (uri.IsAbsoluteUri && (uri.Scheme == "avares" || uri.Scheme == "resm"))
             {
                 using var s = AssetLoader.Open(uri);
+                if (loadVersion != _loadVersion)
+                    return;
                 ImageSource = new Bitmap(s);
                 return;
             }
@@ -111,9 +116,12 @@ public class ImageTile : Tile
                 var path = uri.IsAbsoluteUri ? uri.LocalPath : SourceUri!;
                 if (File.Exists(path))
                 {
-                    // load from local file stream
-                    using var fs = File.OpenRead(path);
-                    ImageSource = new Bitmap(fs);
+                    var bytes = await File.ReadAllBytesAsync(path).ConfigureAwait(true);
+                    if (loadVersion != _loadVersion)
+                        return;
+
+                    using var stream = new MemoryStream(bytes);
+                    ImageSource = new Bitmap(stream);
                     return;
                 }
             }
@@ -124,7 +132,8 @@ public class ImageTile : Tile
         catch
         {
             // on any failure, clear image (best-effort, avoid throwing from control code)
-            ImageSource = null;
+            if (loadVersion == _loadVersion)
+                ImageSource = null;
         }
     }
 }

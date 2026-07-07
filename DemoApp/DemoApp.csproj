@@ -1,10 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <EnableTreeDataGridDemo Condition="'$(EnableTreeDataGridDemo)' == ''">false</EnableTreeDataGridDemo>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\demo.png" />
@@ -14,17 +16,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.6" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.6" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.6" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.6" />
+    <PackageReference Include="Avalonia" Version="12.0.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.5" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MiniDashboard.Avalonia\MiniDashboard.Avalonia.csproj" />
     <ProjectReference Include="..\MiniDashboard.ScottPlot\MiniDashboard.Avalonia.ScottPlot.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableTreeDataGridDemo)' == 'true'">
     <ProjectReference Include="..\MiniDashboard.TreeDataGrid\MiniDashboard.Avalonia.TreeDataGrid.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableTreeDataGridDemo)' != 'true'">
+    <Compile Remove="Models\TreeDataGrid*.cs" />
   </ItemGroup>
 
   <ItemGroup>
