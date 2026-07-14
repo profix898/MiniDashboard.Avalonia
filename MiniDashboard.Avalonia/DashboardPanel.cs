@@ -9,6 +9,37 @@ using Avalonia.Media;
 namespace MiniDashboard.Avalonia;
 
 /// <summary>
+/// Describes why a dashboard placement request could not be applied exactly.
+/// </summary>
+public enum DashboardPlacementFailureReason
+{
+    /// <summary>
+    /// The requested placement was accepted exactly.
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// The requested placement exceeded the dashboard bounds.
+    /// </summary>
+    OutOfBounds,
+
+    /// <summary>
+    /// The requested placement collided with another child.
+    /// </summary>
+    Collision,
+
+    /// <summary>
+    /// The requested placement was smaller than the minimum supported size.
+    /// </summary>
+    MinSize,
+
+    /// <summary>
+    /// No free placement could be found for the requested child.
+    /// </summary>
+    NoSpace
+}
+
+/// <summary>
 /// A grid-like panel that arranges tile tiles into a fixed number of rows and columns.
 /// Provides occupancy tracking and snap-preview overlays for dragging/resizing tiles.
 /// </summary>
@@ -45,6 +76,14 @@ public class DashboardPanel : Panel
     /// </summary>
     public static readonly StyledProperty<double> GridLineThicknessProperty =
         AvaloniaProperty.Register<DashboardPanel, double>(nameof(GridLineThickness), 1.0);
+
+    /// <summary>
+    /// Read-only property that reports why the most recent placement request could not be applied exactly.
+    /// </summary>
+    public static readonly DirectProperty<DashboardPanel, DashboardPlacementFailureReason> LastPlacementFailureReasonProperty =
+        AvaloniaProperty.RegisterDirect<DashboardPanel, DashboardPlacementFailureReason>(
+            nameof(LastPlacementFailureReason),
+            panel => panel.LastPlacementFailureReason);
 
     /// <summary>
     /// Attached property for the height (span in rows) of tile tiles.
@@ -141,6 +180,7 @@ public class DashboardPanel : Panel
     private Control?[,]? _cells;
     private int _cellsColumns;
     private int _cellsRows;
+    private DashboardPlacementFailureReason _lastPlacementFailureReason;
     private (int x, int y, int w, int h, bool valid)? _preview;
 
     /// <summary>
@@ -195,6 +235,15 @@ public class DashboardPanel : Panel
     {
         get { return GetValue(GridLineThicknessProperty); }
         set { SetValue(GridLineThicknessProperty, value); }
+    }
+
+    /// <summary>
+    /// Gets why the most recent move or resize request could not be applied exactly.
+    /// </summary>
+    public DashboardPlacementFailureReason LastPlacementFailureReason
+    {
+        get { return _lastPlacementFailureReason; }
+        private set { SetAndRaise(LastPlacementFailureReasonProperty, ref _lastPlacementFailureReason, value); }
     }
 
     /// <summary>
@@ -352,6 +401,14 @@ public class DashboardPanel : Panel
         control.SetValue(HProperty, h);
     }
 
+    /// <summary>
+    /// Returns whether the child is owned internally by the panel rather than by the dashboard content.
+    /// </summary>
+    protected bool IsDashboardInternalChild(Control child)
+    {
+        return child == _overlay;
+    }
+
     protected override Size MeasureOverride(Size availableSize)
     {
         var cell = GetCellSize(availableSize);
@@ -451,15 +508,19 @@ public class DashboardPanel : Panel
         var h = Math.Max(1, GetH(tile));
         var columns = GridColumns;
         var rows = GridRows;
+        var requestedX = targetX;
+        var requestedY = targetY;
 
         targetX = Math.Clamp(targetX, 0, Math.Max(0, columns - w));
         targetY = Math.Clamp(targetY, 0, Math.Max(0, rows - h));
+        var wasOutOfBounds = targetX != requestedX || targetY != requestedY;
 
         BuildOccupancy(tile);
         if (IsFree(targetX, targetY, w, h))
         {
             resolvedX = targetX;
             resolvedY = targetY;
+            LastPlacementFailureReason = wasOutOfBounds ? DashboardPlacementFailureReason.OutOfBounds : DashboardPlacementFailureReason.None;
             return true;
         }
 
@@ -468,6 +529,7 @@ public class DashboardPanel : Panel
         if (best is not null)
         {
             (resolvedX, resolvedY) = best.Value;
+            LastPlacementFailureReason = wasOutOfBounds ? DashboardPlacementFailureReason.OutOfBounds : DashboardPlacementFailureReason.Collision;
             return true;
         }
 
@@ -476,11 +538,13 @@ public class DashboardPanel : Panel
         {
             resolvedX = last.x;
             resolvedY = last.y;
+            LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
             return false;
         }
 
         resolvedX = targetX;
         resolvedY = targetY;
+        LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
         return false;
     }
 
@@ -494,15 +558,24 @@ public class DashboardPanel : Panel
         var y = Math.Max(0, GetY(tile));
         var columns = GridColumns;
         var rows = GridRows;
+        var requestedW = targetW;
+        var requestedH = targetH;
 
         targetW = Math.Clamp(targetW, 1, Math.Max(1, columns - x));
         targetH = Math.Clamp(targetH, 1, Math.Max(1, rows - y));
+        var wasTooSmall = requestedW < 1 || requestedH < 1;
+        var wasOutOfBounds = targetW != requestedW || targetH != requestedH;
 
         BuildOccupancy(tile);
         if (IsFree(x, y, targetW, targetH))
         {
             resolvedW = targetW;
             resolvedH = targetH;
+            LastPlacementFailureReason = wasTooSmall
+                ? DashboardPlacementFailureReason.MinSize
+                : wasOutOfBounds
+                    ? DashboardPlacementFailureReason.OutOfBounds
+                    : DashboardPlacementFailureReason.None;
             return true;
         }
 
@@ -515,6 +588,11 @@ public class DashboardPanel : Panel
                 {
                     resolvedW = w;
                     resolvedH = h;
+                    LastPlacementFailureReason = wasTooSmall
+                        ? DashboardPlacementFailureReason.MinSize
+                        : wasOutOfBounds
+                            ? DashboardPlacementFailureReason.OutOfBounds
+                            : DashboardPlacementFailureReason.Collision;
                     return false;
                 }
             }
@@ -525,11 +603,13 @@ public class DashboardPanel : Panel
         {
             resolvedW = last.w;
             resolvedH = last.h;
+            LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
             return false;
         }
 
         resolvedW = 1;
         resolvedH = 1;
+        LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
         return false;
     }
 

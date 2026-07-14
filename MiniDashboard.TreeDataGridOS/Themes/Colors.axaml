@@ -1,0 +1,6 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- TreeDataGrid project colors re-use core dashboard colors -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Colors.axaml" />
+    </ResourceDictionary.MergedDictionaries>
+</ResourceDictionary>

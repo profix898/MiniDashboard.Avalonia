@@ -25,6 +25,7 @@ Optional packages:
 ```bash
 dotnet add package MiniDashboard.Avalonia.ScottPlot
 dotnet add package MiniDashboard.Avalonia.TreeDataGrid
+dotnet add package MiniDashboard.Avalonia.TreeDataGridOS
 ```
 
-See the GitHub README for full setup, examples, and extension package notes.
+`MiniDashboard.Avalonia.TreeDataGridOS` uses the community-maintained MIT `TreeDataGrid.Avalonia` fork and is an alternative to the commercial TreeDataGrid extension. See the GitHub README for full setup, examples, and extension package notes.

@@ -9,15 +9,18 @@
 - `MiniDashboard.Avalonia` - core dashboard panel and tile controls.
 - `MiniDashboard.Avalonia.ScottPlot` - optional ScottPlot chart tiles.
 - `MiniDashboard.Avalonia.TreeDataGrid` - optional TreeDataGrid tiles.
+- `MiniDashboard.Avalonia.TreeDataGridOS` - optional TreeDataGrid tiles backed by the community-maintained open-source fork.
 
 The projects target `net10.0`, matching the recommended target for Avalonia 12.
 
 ## Features
 
 - **DashboardPanel**: fixed `Rows` x `Columns` grid, attached layout properties, snap preview, and collision-aware move/resize resolution.
+- **DashboardItemsPanel**: ItemsSource-based dashboard host that materializes generated tile controls directly as dashboard children.
 - **Tile**: base content tile with grid position/size properties, custom header content, optional resize grip, styling properties, and placement-valid feedback.
 - **TextTile**: simple text display tile.
 - **ImageTile**: image display tile using `ImageSource` or `SourceUri`.
+- **TableViewTile**: read-only tabular data display using Avalonia's `TableView` control.
 - **ScottPlot tiles**: `PlotTile`, cartesian chart tiles, and pie chart tiles.
 - **TreeDataGrid tiles**: `TreeDataGridTile` and `CsvGridTile`.
 
@@ -34,9 +37,11 @@ Install optional extension packages only when needed:
 ```bash
 dotnet add package MiniDashboard.Avalonia.ScottPlot
 dotnet add package MiniDashboard.Avalonia.TreeDataGrid
+dotnet add package MiniDashboard.Avalonia.TreeDataGridOS
 ```
 
 `MiniDashboard.Avalonia.TreeDataGrid` depends on Avalonia's TreeDataGrid package. Avalonia 12 TreeDataGrid package usage may require an Avalonia UI license in consuming applications.
+`MiniDashboard.Avalonia.TreeDataGridOS` instead depends on the MIT-licensed community `TreeDataGrid.Avalonia` fork. The two packages are alternatives and should not be referenced together.
 
 ## Register Styles
 
@@ -46,7 +51,8 @@ Add the style include for each package you use in `App.axaml`:
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:dashboard="clr-namespace:MiniDashboard.Avalonia.Themes;assembly=MiniDashboard.Avalonia"
              xmlns:dashboardScottPlot="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Themes;assembly=MiniDashboard.Avalonia.ScottPlot"
-             xmlns:dashboardGrid="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid.Themes;assembly=MiniDashboard.Avalonia.TreeDataGrid">
+             xmlns:dashboardGrid="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid.Themes;assembly=MiniDashboard.Avalonia.TreeDataGrid"
+             xmlns:dashboardGridOS="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid.Themes;assembly=MiniDashboard.Avalonia.TreeDataGridOS">
   <Application.Styles>
     <FluentTheme />
     <dashboard:MiniDashboardStyles />
@@ -54,6 +60,8 @@ Add the style include for each package you use in `App.axaml`:
     <!-- Optional extension styles -->
     <dashboardScottPlot:ScottPlotStyles />
     <dashboardGrid:TreeDataGridStyles />
+    <!-- Use this instead of dashboardGrid:TreeDataGridStyles for the community fork. -->
+    <!-- <dashboardGridOS:TreeDataGridStyles /> -->
   </Application.Styles>
 </Application>
 ```
@@ -89,6 +97,43 @@ Tiles expose grid properties that are synchronized to the parent `DashboardPanel
 - `MinGridW` and `MinGridH` define resize minimums.
 
 The panel resolves overlapping moves and resizes to the nearest valid placement. Snap preview color indicates whether the requested placement was exact or adjusted.
+
+## Dynamic ItemsSource Dashboards
+
+Use `DashboardItemsPanel` for MVVM or config-driven dashboards. It derives from `DashboardPanel`, exposes `ItemsSource` and `ItemTemplate`, and uses the control's `DataTemplates` collection to build one direct dashboard child per item. It does not use `ContentPresenter` item containers, so generated `Tile` controls keep the same drag and resize behavior as static XAML children.
+
+```xml
+<dash:DashboardItemsPanel xmlns:dash="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+                          xmlns:vm="clr-namespace:MyApp.ViewModels"
+                          xmlns:views="clr-namespace:MyApp.Views"
+                          ItemsSource="{Binding Tiles}"
+                          Rows="10"
+                          Columns="15">
+  <dash:DashboardItemsPanel.DataTemplates>
+    <DataTemplate DataType="{x:Type vm:LogTileViewModel}">
+      <views:LogTile />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:MetricTileViewModel}">
+      <views:MetricChartTile />
+    </DataTemplate>
+  </dash:DashboardItemsPanel.DataTemplates>
+</dash:DashboardItemsPanel>
+```
+
+Each generated control receives the source item as its `DataContext`. If an item is already a `Control`, it is used directly. If no matching template can build a `Control`, `DashboardItemsPanel` throws a clear exception.
+
+By default, generated `Tile` controls bind common layout conventions from the item view model:
+
+- `TileHeaderPath="Title"`
+- `GridXPath="X"`
+- `GridYPath="Y"`
+- `GridWPath="Width"`
+- `GridHPath="Height"`
+- `GridBindingMode="TwoWay"`
+
+Set any path to `{x:Null}` to disable that convention binding. Set `DisposeRemovedTiles="True"` to dispose removed generated controls that implement `IDisposable`. `PreserveStaticChildren="True"` keeps any static children declared directly in the panel while generated children are rebuilt.
+
+`DashboardPanel` remains the simplest choice for static XAML dashboards. `DashboardItemsPanel` is the recommended host when tiles come from view models, configuration files, or runtime collections.
 
 ## Data Binding And Persistence
 
@@ -143,6 +188,24 @@ Register `ScottPlotStyles`, then use chart tiles inside a dashboard:
 
 Available chart types include `ScatterPlotTile`, `SignalPlotTile`, `HistogramPlotTile`, `BarsPlotTile`, `FinancialPlotTile`, and `PiePlotTile`.
 
+## TableView Tile
+
+`TableViewTile` is a lightweight read-only table backed by Avalonia 12.1's `TableView`. Define native `TableViewColumn` instances for bindings, templates, widths, alignment, and optional per-column resize behavior:
+
+```xml
+<dash:TableViewTile xmlns:dash="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+                    GridX="0" GridY="0" GridW="5" GridH="3"
+                    TileHeader="Services"
+                    ItemsSource="{Binding Services}">
+  <dash:TableViewTile.Columns>
+    <TableViewColumn Header="Name" Binding="{Binding Name}" Width="2*" />
+    <TableViewColumn Header="Status" Binding="{Binding Status}" Width="*" />
+  </dash:TableViewTile.Columns>
+</dash:TableViewTile>
+```
+
+Set `CanUserResizeColumns="False"` on the tile to disable resizing for all columns, or set `TableViewColumn.CanUserResize` on an individual column.
+
 ## TreeDataGrid Extension
 
 Register `TreeDataGridStyles`, then bind a `TreeDataGridSource` to `TreeDataGridTile.Source`:
@@ -156,37 +219,7 @@ Register `TreeDataGridStyles`, then bind a `TreeDataGridSource` to `TreeDataGrid
 
 `CsvGridTile` can load a simple comma-separated file path. It intentionally uses a minimal CSV parser and does not support quoting or escaping.
 
-## Demo App
-
-The demo app builds without the TreeDataGrid demo by default so the solution can be built without an Avalonia UI license key:
-
-```bash
-dotnet build .\MiniDashboard.Avalonia.slnx
-```
-
-To include the TreeDataGrid demo surfaces, build with:
-
-```bash
-dotnet build .\DemoApp\DemoApp.csproj -p:EnableTreeDataGridDemo=true
-```
-
-## Build And Package
-
-Build the full solution:
-
-```bash
-dotnet build .\MiniDashboard.Avalonia.slnx
-```
-
-Create NuGet packages explicitly with `dotnet pack`:
-
-```bash
-dotnet pack .\MiniDashboard.Avalonia\MiniDashboard.Avalonia.csproj -c Release
-dotnet pack .\MiniDashboard.ScottPlot\MiniDashboard.Avalonia.ScottPlot.csproj -c Release
-dotnet pack .\MiniDashboard.TreeDataGrid\MiniDashboard.Avalonia.TreeDataGrid.csproj -c Release
-```
-
-Packages are written to `Build/<Configuration>/Packages/`.
+For the community package, use the same CLR namespace with the OS assembly name and register `dashboardGridOs:TreeDataGridStyles` instead. Its `TreeDataGridTile` accepts the fork's `ITreeDataGridSource`; `CsvGridTile` continues to work without API changes.
 
 ## Extending
 
@@ -196,6 +229,17 @@ To create a custom tile:
 2. Register Avalonia styled properties with `AvaloniaProperty.Register`.
 3. Provide a control theme or template under your application's styles.
 4. Bind template parts to the tile properties.
+
+If a derived tile should reuse a base tile's existing control theme, override `StyleKeyOverride`:
+
+```csharp
+public class LogTile : TableViewTile
+{
+  protected override Type StyleKeyOverride => typeof(TableViewTile);
+}
+```
+
+Dashboard child styles use `:is(...)` selectors so derived tile classes still receive the dashboard-level corner radius, border brush, and border thickness bindings.
 
 Example:
 
