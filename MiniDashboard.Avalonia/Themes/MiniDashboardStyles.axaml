@@ -11,6 +11,7 @@
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Controls/Tile.axaml" />
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Controls/TextTile.axaml" />
                 <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Controls/ImageTile.axaml" />
+                <ResourceInclude Source="avares://MiniDashboard.Avalonia/Themes/Controls/TableViewTile.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter" />
@@ -31,7 +32,7 @@
     </Style>
 
     <!-- Tiles bind Tile properties to global DashboardPanel properties -->
-    <Style Selector="controls|DashboardPanel > controls|Tile">
+        <Style Selector="controls|DashboardPanel > :is(controls|Tile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -39,7 +40,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
     </Style>
-    <Style Selector="controls|DashboardPanel > controls|TextTile">
+        <Style Selector="controls|DashboardPanel > :is(controls|TextTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -47,7 +48,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
     </Style>
-    <Style Selector="controls|DashboardPanel > controls|ImageTile">
+        <Style Selector="controls|DashboardPanel > :is(controls|ImageTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -55,6 +56,14 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
     </Style>
+        <Style Selector="controls|DashboardPanel > :is(controls|TableViewTile)">
+        <Setter Property="CornerRadius"
+            Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderBrush"
+            Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        <Setter Property="BorderThickness"
+            Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+        </Style>
 
     <!-- Resize grip is subtle at rest and reveals on hover to guide the eye to the active corner.
          Uses :is() so it applies to every tile type (TextTile, ImageTile, PlotTile, TreeDataGridTile, ...) across all assemblies. -->

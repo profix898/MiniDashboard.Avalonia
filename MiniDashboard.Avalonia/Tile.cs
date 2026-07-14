@@ -299,7 +299,7 @@ public class Tile : ContentControl
 
     private void OnResizeStarted(object? sender, VectorEventArgs e)
     {
-        if (this.GetVisualAncestors().OfType<DashboardPanel>().FirstOrDefault() is { } panel)
+        if (ResolveDashboardPanel() is { } panel)
         {
             _resizePanel = panel;
 
@@ -380,16 +380,16 @@ public class Tile : ContentControl
 
     private void OnResizeCompleted(object? sender, VectorEventArgs e)
     {
-        if (_resizePanel is { } panel)
+        var panel = _resizePanel ?? ResolveDashboardPanel();
+        if (_resizePanel is { } resizePanel)
         {
-            panel.PointerMoved -= OnResizePointerMoved;
-            panel.HideSnapPreview();
+            resizePanel.PointerMoved -= OnResizePointerMoved;
+            resizePanel.HideSnapPreview();
         }
 
         // final push to the panel and force arrange so visual size matches the last resolved values
         PushAllToDashboard();
-        if (Parent is DashboardPanel dp)
-            dp.InvalidateArrange();
+        panel?.InvalidateArrange();
 
         // reset tracked panel
         _resizePanel = null;
@@ -406,12 +406,19 @@ public class Tile : ContentControl
     // Push current tile grid properties to the parent DashboardPanel attached properties
     private void PushAllToDashboard()
     {
-        if (Parent is DashboardPanel)
+        if (ResolveDashboardPanel() is not null)
         {
             DashboardPanel.SetX(this, GridX);
             DashboardPanel.SetY(this, GridY);
             DashboardPanel.SetW(this, Math.Max(1, GridW));
             DashboardPanel.SetH(this, Math.Max(1, GridH));
         }
+    }
+
+    private DashboardPanel? ResolveDashboardPanel()
+    {
+        return Parent as DashboardPanel
+               ?? _resizePanel
+               ?? this.GetVisualAncestors().OfType<DashboardPanel>().FirstOrDefault();
     }
 }

@@ -35,7 +35,7 @@
     </Styles.Resources>
 
     <!-- Tiles bind Tile properties to global DashboardPanel properties -->
-    <Style Selector="dashboard|DashboardPanel > cartesian|BarsPlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(cartesian|BarsPlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -43,7 +43,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > cartesian|CartesianPlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(cartesian|CartesianPlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -51,7 +51,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > cartesian|FinancialPlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(cartesian|FinancialPlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -59,7 +59,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > cartesian|HistogramPlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(cartesian|HistogramPlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -67,7 +67,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > pie|PieChartPlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(pie|PieChartPlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -75,7 +75,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > pie|PiePlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(pie|PiePlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -83,7 +83,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > controls|PlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(controls|PlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -91,7 +91,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > cartesian|ScatterPlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(cartesian|ScatterPlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
@@ -99,7 +99,7 @@
         <Setter Property="BorderThickness"
                 Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > cartesian|SignalPlotTile">
+        <Style Selector="dashboard|DashboardPanel > :is(cartesian|SignalPlotTile)">
         <Setter Property="CornerRadius"
                 Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
         <Setter Property="BorderBrush"
