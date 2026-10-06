@@ -1,15 +1,12 @@
-﻿// Controls/Tile.cs
+// Controls/Tile.cs
 
 using System;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
-using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.VisualTree;
 
 namespace MiniDashboard.Avalonia;
 
@@ -68,21 +65,59 @@ public class Tile : ContentControl
     public static readonly StyledProperty<string?> TileHeaderProperty =
         AvaloniaProperty.Register<Tile, string?>(nameof(TileHeader), "Tile");
 
-    private int _resizeLastWantedH;
+    /// <summary>Defines optional actions displayed by the common header.</summary>
+    public static readonly StyledProperty<FlyoutBase?> HeaderActionsProperty =
+        AvaloniaProperty.Register<Tile, FlyoutBase?>(nameof(HeaderActions));
 
-    private int _resizeLastWantedW;
+    /// <summary>Gets or sets an independent header flyout; hosted content keeps its own context menu.</summary>
+    public FlyoutBase? HeaderActions
+    {
+        get { return GetValue(HeaderActionsProperty); }
+        set { SetValue(HeaderActionsProperty, value); }
+    }
 
-    private DashboardPanel? _resizePanel;
-    private int _resizeStartGridH;
-    private int _resizeStartGridW;
+    /// <summary>Whether this host permits an individual resize grip.</summary>
+    public static readonly DirectProperty<Tile, bool> IsResizeGripVisibleProperty =
+        AvaloniaProperty.RegisterDirect<Tile, bool>(nameof(IsResizeGripVisible), t => t.IsResizeGripVisible);
 
-    // --- Changed fields: track resize start + last wanted cell deltas and panel ---
-    private int _resizeStartGridX;
-    private int _resizeStartGridY;
+    /// <summary>Whether this host permits an individual resize grip.</summary>
+    public bool IsResizeGripVisible => IsResizable && _matrixHeaderVisible is null;
 
-    private IDisposable? _headerContentSubscription;
-    private IDisposable? _headerTemplateSubscription;
-    private IDisposable? _tileHeaderSubscription;
+    /// <summary>Whether the header is visible in the current host.</summary>
+    public static readonly DirectProperty<Tile, bool> IsHeaderPresentedProperty =
+        AvaloniaProperty.RegisterDirect<Tile, bool>(nameof(IsHeaderPresented), t => t.IsHeaderPresented);
+
+    /// <summary>Whether the header is visible in the current host.</summary>
+    public bool IsHeaderPresented => _matrixHeaderVisible ?? IsHeaderVisible;
+
+    /// <summary>The combined host and tile action menu.</summary>
+    public static readonly DirectProperty<Tile, FlyoutBase?> EffectiveHeaderActionsProperty =
+        AvaloniaProperty.RegisterDirect<Tile, FlyoutBase?>(nameof(EffectiveHeaderActions), t => t.EffectiveHeaderActions);
+
+    /// <summary>The combined host and tile action menu.</summary>
+    public FlyoutBase? EffectiveHeaderActions => _matrixActions ?? HeaderActions;
+
+    private bool? _matrixHeaderVisible;
+    private FlyoutBase? _matrixActions;
+
+    internal void SetMatrixHost(bool? headers, FlyoutBase? actions)
+    {
+        var resize = IsResizeGripVisible;
+        var header = IsHeaderPresented;
+        var menu = EffectiveHeaderActions;
+        _matrixHeaderVisible = headers;
+        _matrixActions = actions;
+        RaisePropertyChanged(IsResizeGripVisibleProperty, resize, IsResizeGripVisible);
+        RaisePropertyChanged(IsHeaderPresentedProperty, header, IsHeaderPresented);
+        RaisePropertyChanged(EffectiveHeaderActionsProperty, menu, EffectiveHeaderActions);
+        UpdateOverlayActions();
+    }
+
+    private void UpdateOverlayActions() => PseudoClasses.Set(":overlay-actions", _matrixHeaderVisible is null && !IsHeaderPresented && EffectiveHeaderActions is not null);
+
+    private DashboardTileResizeBehavior? _resizeBehavior;
+
+    private ContentPresenter? _headerPresenter;
 
     static Tile()
     {
@@ -229,7 +264,7 @@ public class Tile : ContentControl
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        DisposeHeaderSubscriptions();
+        _resizeBehavior?.Cancel();
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -237,164 +272,47 @@ public class Tile : ContentControl
     {
         base.OnApplyTemplate(e);
 
-        // Attach handlers to both the visible small grip and the larger invisible hit-area
-        var hitThumb = e.NameScope.Find<Thumb>("PART_ResizeThumb_HitArea");
-        var thumb = e.NameScope.Find<Thumb>("PART_ResizeThumb");
+        (_resizeBehavior ??= new DashboardTileResizeBehavior(this)).Attach(e.NameScope.Find<Thumb>("PART_ResizeThumb_HitArea"),
+                                                                           e.NameScope.Find<Thumb>("PART_ResizeThumb"));
 
-        void AttachHandlers(Thumb t)
-        {
-            t.DragStarted -= OnResizeStarted;
-            t.DragStarted += OnResizeStarted;
-
-            // use pointer-move based resizing, do not rely on per-event vector deltas
-            t.DragCompleted -= OnResizeCompleted;
-            t.DragCompleted += OnResizeCompleted;
-        }
-
-        if (hitThumb != null)
-            AttachHandlers(hitThumb);
-        if (thumb != null)
-            AttachHandlers(thumb);
-
-        // header presenter sync (pick HeaderContent or TileHeader string)
-        if (e.NameScope.Find<ContentPresenter>("PART_HeaderPresenter") is { } cp)
-        {
-            DisposeHeaderSubscriptions();
-
-            void Sync()
-            {
-                cp.ContentTemplate = HeaderTemplate;
-                cp.Content = HeaderContent ?? TileHeader;
-            }
-
-            Sync();
-
-            _headerContentSubscription = HeaderContentProperty.Changed.Subscribe(args =>
-            {
-                if (args.Sender == this)
-                    Sync();
-            });
-            _headerTemplateSubscription = HeaderTemplateProperty.Changed.Subscribe(args =>
-            {
-                if (args.Sender == this)
-                    Sync();
-            });
-            _tileHeaderSubscription = TileHeaderProperty.Changed.Subscribe(args =>
-            {
-                if (args.Sender == this)
-                    Sync();
-            });
-        }
+        // Compatibility with application templates using the original named presenter.
+        _headerPresenter = e.NameScope.Find<ContentPresenter>("PART_HeaderPresenter");
+        SyncHeader();
     }
 
-    private void DisposeHeaderSubscriptions()
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
-        _headerContentSubscription?.Dispose();
-        _headerTemplateSubscription?.Dispose();
-        _tileHeaderSubscription?.Dispose();
-        _headerContentSubscription = null;
-        _headerTemplateSubscription = null;
-        _tileHeaderSubscription = null;
-    }
-
-    private void OnResizeStarted(object? sender, VectorEventArgs e)
-    {
-        if (ResolveDashboardPanel() is { } panel)
+        base.OnPropertyChanged(change);
+        if (change.Property == IsResizableProperty)
         {
-            _resizePanel = panel;
-
-            // capture starting grid pos and size
-            // Use attached X/Y from the panel to ensure we anchor to the tile's actual arranged cell coordinates
-            _resizeStartGridX = DashboardPanel.GetX(this);
-            _resizeStartGridY = DashboardPanel.GetY(this);
-            _resizeStartGridW = GridW;
-            _resizeStartGridH = GridH;
-
-            // initial preview at current arranged position
-            panel.ShowSnapPreview(_resizeStartGridX, _resizeStartGridY, _resizeStartGridW, _resizeStartGridH, true);
-            IsPlacementValid = true;
-
-            // initialize last-wanted with current size
-            _resizeLastWantedW = _resizeStartGridW;
-            _resizeLastWantedH = _resizeStartGridH;
-
-            // subscribe to pointer moves on the panel to track absolute pointer position
-            panel.PointerMoved -= OnResizePointerMoved;
-            panel.PointerMoved += OnResizePointerMoved;
+            if (!IsResizable)
+                _resizeBehavior?.Cancel();
+            
+            RaisePropertyChanged(IsResizeGripVisibleProperty, change.GetOldValue<bool>() && _matrixHeaderVisible is null, IsResizeGripVisible);
         }
+        
+        if (change.Property == IsHeaderVisibleProperty)
+            RaisePropertyChanged(IsHeaderPresentedProperty, _matrixHeaderVisible ?? change.GetOldValue<bool>(), IsHeaderPresented);
+        
+        if (change.Property == HeaderActionsProperty)
+            RaisePropertyChanged(EffectiveHeaderActionsProperty, _matrixActions ?? change.GetOldValue<FlyoutBase?>(), EffectiveHeaderActions);
+        
+        if (change.Property == IsHeaderVisibleProperty || change.Property == HeaderActionsProperty)
+            UpdateOverlayActions();
+        
+        if (change.Property == HeaderContentProperty || change.Property == HeaderTemplateProperty ||
+            change.Property == TileHeaderProperty)
+            SyncHeader();
     }
 
-    private void OnResizePointerMoved(object? sender, PointerEventArgs e)
+    private void SyncHeader()
     {
-        if (_resizePanel is null)
+        if (_headerPresenter is null)
             return;
-        var panel = _resizePanel;
-
-        // get pointer position relative to panel
-        var pos = e.GetPosition(panel);
-
-        // compute cell size
-        var cell = panel.GetCellSize(panel.Bounds.Size);
-        var cw = Math.Max(1.0, cell.Width);
-        var ch = Math.Max(1.0, cell.Height);
-
-        // determine which column/row the pointer is currently over
-        var col = (int) Math.Floor(pos.X / cw);
-        var row = (int) Math.Floor(pos.Y / ch);
-
-        col = Math.Clamp(col, 0, panel.Columns - 1);
-        row = Math.Clamp(row, 0, panel.Rows - 1);
-
-        // compute wanted size as number of columns/rows from the start X/Y to the pointer column/row
-        // ensure we use the start X/Y captured from the panel so resizing is anchored to the tile's position
-        var wantedW = Math.Max(1, col - _resizeStartGridX + 1);
-        var wantedH = Math.Max(1, row - _resizeStartGridY + 1);
-
-        // enforce minimums
-        wantedW = Math.Max(wantedW, MinGridW);
-        wantedH = Math.Max(wantedH, MinGridH);
-
-        // only act when a full-cell boundary was crossed (i.e. wanted changed)
-        if (wantedW == _resizeLastWantedW && wantedH == _resizeLastWantedH)
-            return;
-
-        _resizeLastWantedW = wantedW;
-        _resizeLastWantedH = wantedH;
-
-        var ok = panel.TryResolveResize(this, wantedW, wantedH, out var rw, out var rh);
-        var isExact = ok && rw == wantedW && rh == wantedH;
-
-        // apply resolved size to this tile but DO NOT change its position
-        GridW = rw;
-        GridH = rh;
-
-        // restore/keep GridX/GridY anchored to the captured start position to avoid moving the tile while resizing
-        GridX = _resizeStartGridX;
-        GridY = _resizeStartGridY;
-        PushAllToDashboard();
-
-        // show preview at resolved and mark header validity if it had to adjust
-        panel.ShowSnapPreview(GridX, GridY, rw, rh, isExact);
-        IsPlacementValid = isExact;
-    }
-
-    private void OnResizeCompleted(object? sender, VectorEventArgs e)
-    {
-        var panel = _resizePanel ?? ResolveDashboardPanel();
-        if (_resizePanel is { } resizePanel)
-        {
-            resizePanel.PointerMoved -= OnResizePointerMoved;
-            resizePanel.HideSnapPreview();
-        }
-
-        // final push to the panel and force arrange so visual size matches the last resolved values
-        PushAllToDashboard();
-        panel?.InvalidateArrange();
-
-        // reset tracked panel
-        _resizePanel = null;
-
-        IsPlacementValid = true;
+        
+        _headerPresenter.ContentTemplate = HeaderTemplate;
+        _headerPresenter.Content = HeaderContent ?? TileHeader;
     }
 
     private static void SyncLocation(AvaloniaPropertyChangedEventArgs args)
@@ -417,8 +335,6 @@ public class Tile : ContentControl
 
     private DashboardPanel? ResolveDashboardPanel()
     {
-        return Parent as DashboardPanel
-               ?? _resizePanel
-               ?? this.GetVisualAncestors().OfType<DashboardPanel>().FirstOrDefault();
+        return Parent as DashboardPanel;
     }
 }

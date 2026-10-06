@@ -93,6 +93,7 @@ public class ImageTile : Tile
         {
             // Clear image if no URI provided
             ImageSource = null;
+            
             return;
         }
 
@@ -106,7 +107,9 @@ public class ImageTile : Tile
                 using var s = AssetLoader.Open(uri);
                 if (loadVersion != _loadVersion)
                     return;
+                
                 ImageSource = new Bitmap(s);
+                
                 return;
             }
 
@@ -122,6 +125,7 @@ public class ImageTile : Tile
 
                     using var stream = new MemoryStream(bytes);
                     ImageSource = new Bitmap(stream);
+                    
                     return;
                 }
             }

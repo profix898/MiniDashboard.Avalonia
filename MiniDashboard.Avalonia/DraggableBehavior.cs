@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -66,7 +66,7 @@ public class DraggableBehavior
     #region Handlers
 
     // Cancel an active drag and clean up handlers/capture
-    private static void CancelDrag(Control tile, DragState state, bool markInvalid)
+    private static void CancelDrag(Control tile, DragState state)
     {
         if (!state.dragging)
             return;
@@ -95,6 +95,7 @@ public class DraggableBehavior
         {
             if (state.panelMovedHandler is not null)
                 state.panel.RemoveHandler(InputElement.PointerMovedEvent, state.panelMovedHandler);
+            
             if (state.panelReleasedHandler is not null)
                 state.panel.RemoveHandler(InputElement.PointerReleasedEvent, state.panelReleasedHandler);
         }
@@ -110,6 +111,7 @@ public class DraggableBehavior
             {
                 // Ignore
             }
+            
             try
             {
                 state.panel?.RemoveHandler(InputElement.PointerCaptureLostEvent, state.captureLostHandler);
@@ -118,13 +120,14 @@ public class DraggableBehavior
             {
                 // Ignore
             }
+            
             state.captureLostHandler = null;
         }
 
-        // Hide preview and mark placement invalid if requested
+        // Invalid placement is transient feedback for an active drag.
         state.panel?.HideSnapPreview();
-        if (markInvalid && tile is Tile tb)
-            tb.IsPlacementValid = false;
+        if (tile is Tile tb)
+            tb.IsPlacementValid = true;
 
         // Clear panel reference but keep the DragState attached (creates new on next drag)
         state.panel = null;
@@ -152,13 +155,10 @@ public class DraggableBehavior
                 return;
         }
 
-        var panel = source.GetVisualAncestors().OfType<DashboardPanel>().FirstOrDefault();
-        if (panel is null)
+        // Stop at the nearest tile: nested content must never manipulate an outer tile.
+        var tile = source as Tile ?? source.GetVisualAncestors().OfType<Tile>().FirstOrDefault();
+        if (tile?.Parent is not DashboardPanel panel)
             return;
-
-        // If the clicked element is a sub-element (e.g. header) of the tile, find the actual tile
-        // which is the direct tile of the panel. Use TakeWhile/LastOrDefault to avoid accessing VisualParent.
-        var tile = source.GetVisualAncestors().OfType<Control>().TakeWhile(c => c != panel).LastOrDefault() ?? source;
 
         var state = GetOrCreateState(tile);
         state.dragging = true;
@@ -193,12 +193,12 @@ public class DraggableBehavior
         state.captureLostHandler = (_, _) =>
         {
             // Ensure we cancel the specific control's drag
-            CancelDrag(tile, state, true);
+            CancelDrag(tile, state);
         };
 
         // Register on tile and panel (best-effort)
-        tile.AddHandler(InputElement.PointerCaptureLostEvent, state.captureLostHandler, RoutingStrategies.Tunnel);
-        panel.AddHandler(InputElement.PointerCaptureLostEvent, state.captureLostHandler, RoutingStrategies.Tunnel);
+        tile.AddHandler(InputElement.PointerCaptureLostEvent, state.captureLostHandler, RoutingStrategies.Direct);
+        panel.AddHandler(InputElement.PointerCaptureLostEvent, state.captureLostHandler, RoutingStrategies.Direct);
 
         // Ensure we still receive pointer events while dragging even if the panel is the capture target:
         state.panelMovedHandler = (_, args) => OnMoved(tile, args);
@@ -222,16 +222,21 @@ public class DraggableBehavior
     {
         if (sender is not Control source)
             return;
+        
         var state = source.GetValue(DragStateProperty);
         if (state is null || !state.dragging || state.panel is null)
             return;
 
-        // Cancel if pointer left panel bounds
+        // Keep capture outside the panel so the same drag can recover on re-entry.
         var posOnPanel = e.GetPosition(state.panel);
         if (posOnPanel.X < 0 || posOnPanel.Y < 0 || posOnPanel.X > state.panel.Bounds.Width || posOnPanel.Y > state.panel.Bounds.Height)
         {
-            CancelDrag(source, state, true);
+            state.panel.HideSnapPreview();
+            if (source is Tile tile)
+                tile.IsPlacementValid = false;
+            
             e.Handled = true;
+            
             return;
         }
 
@@ -239,6 +244,7 @@ public class DraggableBehavior
         var dy = posOnPanel.Y - state.startPointer.Y;
 
         var (cw, ch) = state.panel.GetCellSize(state.panel.Bounds.Size);
+        
         var targetX = state.startCell.x + (int) Math.Round(dx / cw);
         var targetY = state.startCell.y + (int) Math.Round(dy / ch);
 
@@ -263,6 +269,7 @@ public class DraggableBehavior
     {
         if (sender is not Control source)
             return;
+        
         var state = source.GetValue(DragStateProperty);
         if (state is null || !state.dragging || state.panel is null)
             return;
@@ -273,32 +280,28 @@ public class DraggableBehavior
         var dy = pos.Y - state.startPointer.Y;
 
         var (cw, ch) = state.panel.GetCellSize(state.panel.Bounds.Size);
+        
         var targetX = state.startCell.x + (int) Math.Round(dx / cw);
         var targetY = state.startCell.y + (int) Math.Round(dy / ch);
 
         var panel = state.panel; // Capture to avoid null after CancelDrag
 
         // Release capture & remove handlers
-        CancelDrag(source, state, false);
+        CancelDrag(source, state);
+        e.Handled = true;
+
+        // Dropping outside cancels the move instead of clamping it into the grid.
+        if (pos.X < 0 || pos.Y < 0 || pos.X > panel.Bounds.Width || pos.Y > panel.Bounds.Height)
+            return;
 
         if (panel.TryResolveMove(source, targetX, targetY, out var nx, out var ny))
         {
-            DashboardPanel.SetX(source, nx);
-            DashboardPanel.SetY(source, ny);
+            if (!panel.TrySetPlacement(source, nx, ny, DashboardPanel.GetW(source), DashboardPanel.GetH(source)))
+                return;
 
             // Force panel to re-layout immediately so the tile moves right away
             panel.InvalidateArrange();
-
-            if (source is Tile tb)
-                tb.IsPlacementValid = true;
         }
-        else
-        {
-            if (source is Tile tb)
-                tb.IsPlacementValid = false;
-        }
-
-        e.Handled = true;
     }
 
     #endregion
@@ -314,6 +317,7 @@ public class DraggableBehavior
             s = new DragState();
             control.SetValue(DragStateProperty, s);
         }
+        
         return s;
     }
 

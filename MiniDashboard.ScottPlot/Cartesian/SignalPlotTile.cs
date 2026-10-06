@@ -73,6 +73,7 @@ public class SignalPlotTile : CartesianPlotTile
         {
             DataBuilder = null; // Nothing to plot
             ComposePlotBuilder();
+            
             return;
         }
 

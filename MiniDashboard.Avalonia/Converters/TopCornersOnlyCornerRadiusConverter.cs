@@ -13,7 +13,7 @@ public sealed class TopCornersOnlyCornerRadiusConverter : IValueConverter
     /// <summary>
     /// Singleton instance of the converter for use in XAML bindings.
     /// </summary>
-    public static TopCornersOnlyCornerRadiusConverter Instance { get; } = new();
+    public static TopCornersOnlyCornerRadiusConverter Instance { get; } = new TopCornersOnlyCornerRadiusConverter();
 
     #region Implementation of IValueConverter
 

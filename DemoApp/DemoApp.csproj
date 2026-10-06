@@ -1,33 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <IsPackable>false</IsPackable>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-  </PropertyGroup>
-  <ItemGroup>
-    <None Remove="Assets\demo.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <AvaloniaResource Include="Assets\demo.png" />
-  </ItemGroup>
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Remove="Assets\demo.png"/>
+    </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\demo.png"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.1.3"/>
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.3"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MiniDashboard.Avalonia\MiniDashboard.Avalonia.csproj" />
-    <ProjectReference Include="..\MiniDashboard.ScottPlot\MiniDashboard.Avalonia.ScottPlot.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\MiniDashboard.Avalonia\MiniDashboard.Avalonia.csproj"/>
+        <ProjectReference Include="..\MiniDashboard.ScottPlot\MiniDashboard.Avalonia.ScottPlot.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="MainWindow.axaml.cs">
-      <DependentUpon>MainWindow.axaml</DependentUpon>
-    </Compile>
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Update="MainWindow.axaml.cs">
+            <DependentUpon>MainWindow.axaml</DependentUpon>
+        </Compile>
+    </ItemGroup>
 </Project>

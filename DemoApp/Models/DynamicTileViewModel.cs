@@ -51,37 +51,7 @@ public abstract class DynamicTileViewModel : INotifyPropertyChanged
 
         field = value;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        
         return true;
     }
-}
-
-public sealed class DynamicTextTileViewModel : DynamicTileViewModel
-{
-    private string _text = "Generated from ItemsSource";
-
-    public string Text
-    {
-        get { return _text; }
-        set { SetField(ref _text, value); }
-    }
-}
-
-public sealed class DynamicTableTileViewModel : DynamicTileViewModel
-{
-    public IReadOnlyList<DashboardTableRow> Rows { get; init; } = [];
-}
-
-public sealed class DynamicScatterTileViewModel : DynamicTileViewModel
-{
-    public IReadOnlyList<double> Series { get; init; } = [];
-}
-
-public sealed class DynamicServicesTileViewModel : DynamicTileViewModel
-{
-    public IReadOnlyList<DashboardTableRow> Rows { get; init; } = [];
-}
-
-public sealed class DerivedMetricTileViewModel : DynamicTileViewModel
-{
-    public IReadOnlyList<double> Series { get; init; } = [];
 }

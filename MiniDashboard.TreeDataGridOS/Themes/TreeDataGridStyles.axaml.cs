@@ -1,7 +1,7 @@
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 
-namespace MiniDashboard.Avalonia.TreeDataGrid.Themes;
+namespace MiniDashboard.Avalonia.TreeDataGridOS.Themes;
 
 public class TreeDataGridStyles : Styles
 {

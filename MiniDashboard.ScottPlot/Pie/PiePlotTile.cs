@@ -44,6 +44,7 @@ public class PiePlotTile : PieChartPlotTile
                     avaPlot.Plot.ShowLegend();
             };
             ComposePlotBuilder();
+            
             return;
         }
 

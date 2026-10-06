@@ -16,6 +16,8 @@
             <SolidColorBrush x:Key="TileBackgroundBrush" Color="#FF1F2937" />
             <SolidColorBrush x:Key="TileHeaderBackgroundBrush" Color="#FF16202C" />
             <SolidColorBrush x:Key="TileForegroundBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="TileBorderBrush" Color="#FF24313C" />
+            <!-- Preserve the original spelling for applications using that resource. -->
             <SolidColorBrush x:Key="TitleBorderBrush" Color="#FF24313C" />
 
             <SolidColorBrush x:Key="DashboardColumnFillABrush" Color="#11282828" />

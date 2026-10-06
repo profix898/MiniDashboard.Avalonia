@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 
-namespace MiniDashboard.Avalonia.TreeDataGrid;
+namespace MiniDashboard.Avalonia.TreeDataGridOS;
 
 /// <summary>
 /// Tile that hosts a tree data grid source. Inherits base tile behavior from Tile.

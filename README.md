@@ -1,12 +1,16 @@
-﻿# MiniDashboard.Avalonia
+# MiniDashboard.Avalonia
 
 [![NuGet](https://img.shields.io/nuget/v/MiniDashboard.Avalonia?style=flat-square&logo=nuget&color=blue)](https://www.nuget.org/packages/MiniDashboard.Avalonia)
 
-**MiniDashboard.Avalonia** provides dashboard controls for **Avalonia 12** applications. It includes a fixed-grid dashboard panel, draggable and resizable tiles, collision-aware placement, and live snap feedback while moving or resizing tiles.
+**MiniDashboard.Avalonia** provides dashboard controls for **Avalonia 12** applications. Choose free tile placement in a fixed grid with `DashboardPanel`, or one tile per cell in a dynamically editable matrix with `DashboardMatrix`. Both hosts share the same tiles, content catalogs, and header styling.
+
+![Classic dashboard demo with text, custom content, image, chart, and table tiles](Screenshot.png)
+
+*Classic dashboard demo: draggable, resizable tiles with shared headers, ScottPlot charts, and a service table.*
 
 ## Packages
 
-- `MiniDashboard.Avalonia` - core dashboard panel and tile controls.
+- `MiniDashboard.Avalonia` - classic and matrix dashboard hosts, content catalogs, and tile controls.
 - `MiniDashboard.Avalonia.ScottPlot` - optional ScottPlot chart tiles.
 - `MiniDashboard.Avalonia.TreeDataGrid` - optional TreeDataGrid tiles.
 - `MiniDashboard.Avalonia.TreeDataGridOS` - optional TreeDataGrid tiles backed by the community-maintained open-source fork.
@@ -17,12 +21,24 @@ The projects target `net10.0`, matching the recommended target for Avalonia 12.
 
 - **DashboardPanel**: fixed `Rows` x `Columns` grid, attached layout properties, snap preview, and collision-aware move/resize resolution.
 - **DashboardItemsPanel**: ItemsSource-based dashboard host that materializes generated tile controls directly as dashboard children.
+- **DashboardMatrix**: dynamically insertable/removable global rows and columns, proportional native splitters, optional headers, touch-accessible boundary menus, and persistence-friendly snapshots.
+- **DashboardContentTile**: catalog-selected content inside a classic tile; reuse the same catalog in a matrix.
 - **Tile**: base content tile with grid position/size properties, custom header content, optional resize grip, styling properties, and placement-valid feedback.
 - **TextTile**: simple text display tile.
 - **ImageTile**: image display tile using `ImageSource` or `SourceUri`.
 - **TableViewTile**: read-only tabular data display using Avalonia's `TableView` control.
 - **ScottPlot tiles**: `PlotTile`, cartesian chart tiles, and pie chart tiles.
 - **TreeDataGrid tiles**: `TreeDataGridTile` and `CsvGridTile`.
+
+## Choosing a dashboard
+
+| Host | Layout | Best suited to |
+| --- | --- | --- |
+| `DashboardPanel` | Free placement and tile spans within fixed rows/columns | Static XAML dashboards |
+| `DashboardItemsPanel` | The same classic layout, populated from an items source | View-model-driven dashboards |
+| `DashboardMatrix` | One tile per cell, with editable rows/columns and proportional sizing | Structured dashboards that users split and resize |
+
+A matrix split inserts an entire row or column across the matrix. It does not create nested panes. See [Dynamic Matrix Dashboards](#dynamic-matrix-dashboards) for setup, editing, cancellation, and persistence, and [Shared content](#shared-content-across-both-dashboards) for using one catalog with both layouts.
 
 ## Install
 
@@ -40,8 +56,7 @@ dotnet add package MiniDashboard.Avalonia.TreeDataGrid
 dotnet add package MiniDashboard.Avalonia.TreeDataGridOS
 ```
 
-`MiniDashboard.Avalonia.TreeDataGrid` depends on Avalonia's TreeDataGrid package. Avalonia 12 TreeDataGrid package usage may require an Avalonia UI license in consuming applications.
-`MiniDashboard.Avalonia.TreeDataGridOS` instead depends on the MIT-licensed community `TreeDataGrid.Avalonia` fork. The two packages are alternatives and should not be referenced together.
+`MiniDashboard.Avalonia.TreeDataGrid` depends on Avalonia's TreeDataGrid package. Avalonia 12 TreeDataGrid package usage may require an Avalonia UI license in consuming applications. `MiniDashboard.Avalonia.TreeDataGridOS` instead depends on the MIT-licensed community `TreeDataGrid.Avalonia` fork. The two packages are alternatives and should not be referenced together.
 
 ## Register Styles
 
@@ -96,7 +111,7 @@ Tiles expose grid properties that are synchronized to the parent `DashboardPanel
 - `GridW` and `GridH` define the tile span in cells.
 - `MinGridW` and `MinGridH` define resize minimums.
 
-The panel resolves overlapping moves and resizes to the nearest valid placement. Snap preview color indicates whether the requested placement was exact or adjusted.
+The panel resolves overlapping moves to a nearby free position and shrinks colliding resize requests to fit. Move previews show whether a valid destination is available; resize previews also indicate adjusted sizes. Use `LastPlacementFailureReason` when the host needs the reason for an adjustment.
 
 ## Dynamic ItemsSource Dashboards
 
@@ -120,7 +135,7 @@ Use `DashboardItemsPanel` for MVVM or config-driven dashboards. It derives from 
 </dash:DashboardItemsPanel>
 ```
 
-Each generated control receives the source item as its `DataContext`. If an item is already a `Control`, it is used directly. If no matching template can build a `Control`, `DashboardItemsPanel` throws a clear exception.
+Each template-generated control receives the source item as its `DataContext`. If an item is already a `Control`, it is used directly without changing its data context or bindings. If no matching template can build a `Control`, `DashboardItemsPanel` throws a clear exception.
 
 By default, generated `Tile` controls bind common layout conventions from the item view model:
 
@@ -260,6 +275,178 @@ public class ClockTile : Tile
     }
 }
 ```
+
+## Dynamic Matrix Dashboards
+
+Use `DashboardMatrix` for one content slot per cell in a dynamically editable matrix. `DashboardPanel` and `DashboardItemsPanel` still provide free tile placement and spans inside a fixed discrete grid. Both dashboards host the same `Tile` controls and themes. The matrix remains a separate layout control: no pane trees, docking, floating windows, or custom layout engine.
+
+Register `MiniDashboardStyles` as shown above, then place the matrix in a container that gives it a finite width and height:
+
+```xml
+<dash:DashboardMatrix x:Name="Matrix"
+                      MinCellWidth="96" MinCellHeight="72"
+                      SplitterThickness="1" SplitterHitThickness="8" CellSpacing="6"
+                      DisposeRemovedContent="True" />
+```
+
+Supply a catalog of fresh-control factories. IDs are stable, case-sensitive persistence keys; titles are display text and may be localized.
+
+```csharp
+Matrix.ContentDefinitions = new DashboardContentDefinition[]
+{
+    new()
+    {
+        Id = "notes",
+        Title = "Notes",
+        Factory = () => new TextBox { AcceptsReturn = true }
+    },
+    new()
+    {
+        Id = "status",
+        Title = "Status",
+        Factory = () => new TextBlock { Text = "Healthy" }
+    }
+};
+
+Matrix.SetContent(Matrix.Layout.Cells[0].Id, "notes");
+Matrix.InsertColumnAfter(0); // 1 × 2: splits column zero's weight in half
+Matrix.InsertRowAfter(0);    // 2 × 2: inserts across every column
+```
+
+Use `InsertRowBefore/After`, `InsertColumnBefore/After`, `RemoveRow`, and `RemoveColumn` with zero-based logical indices. Insertion divides the referenced definition's current weight equally and inserts empty cells. Removal transfers its weight to the preceding definition, or the following one at index zero. At least one row and column must remain. Existing cell IDs survive coordinate changes.
+
+Tiles in both dashboards use a common compact `DashboardHeader`. Body-content tiles show the selected catalog title, or “Empty”; complete tiles keep their own title and custom header. Set `IsHeaderVisible="False"` on the matrix to omit its headers. The trailing action button appears on hover or keyboard focus; its 28 DIP target remains available to touch at rest. With matrix headers hidden, actions appear temporarily over a boundary when it is hovered, tapped, or keyboard-focused. Hidden buttons never intercept tile content. Empty cells still offer the centered **Add content** button. Hosted controls keep their own context menus.
+
+Splitters use native Avalonia pointer and keyboard resizing. Tab to a divider and use arrow keys. Their transparent hit area overlaps a narrow strip of adjacent cell edges. Defaults are a 1 DIP visual divider, 8 DIP hit target, and 6 DIP `CellSpacing`, with 6 DIP outer `Padding`. The gap reserves the larger of `CellSpacing` and `SplitterThickness`. At divider intersections, the row divider takes pointer priority; the column divider remains reachable along either adjoining segment or through keyboard focus. Set `CanResize="False"` to disable splitter input, and `CanModifyStructure="False"` to disable insertion/removal through both menus and structural methods. Content editing remains available. Minimum cell sizes are maintained; on small screens, provide scrolling or a suitably small layout.
+
+### Host confirmation and persistence
+
+All mutations run on the Avalonia UI thread. `LayoutChanging` supplies the operation kind, previous/proposed immutable snapshots, and affected previous assignments. Set `Cancel = true` to veto. This includes removal, replacement, clearing, restoration, and changes to proportions. For asynchronous confirmation, cancel synchronously, ask in the host UI, then retry the operation after validating that the target still exists. Do not mutate the matrix inside a change handler.
+
+```csharp
+Matrix.LayoutChanging += (_, e) =>
+{
+    if (e.Kind is DashboardMatrixChangeKind.RemoveRow or DashboardMatrixChangeKind.RemoveColumn
+        && e.AffectedCells.Any(cell => cell.ContentId is not null))
+    {
+        e.Cancel = true; // Replace with the host application's confirmation policy.
+    }
+};
+Matrix.LayoutChanged += (_, e) =>
+{
+    var json = System.Text.Json.JsonSerializer.Serialize(e.After);
+    // Persist json using the application's storage policy.
+};
+```
+
+Without a veto handler, requested removal is accepted. Operations return `false` when cancelled, disabled, or a no-op; invalid indices/layouts and factory failures throw. `LayoutChanged` runs after a committed operation; its cancellation value is ignored. Proportion notifications are coalesced on the UI dispatcher. A veto or exception before a proportion change commits restores the native splitter weights. Exceptions from post-commit notifications do not undo the committed layout. Change handlers must not modify the same host synchronously; schedule follow-up edits through the UI dispatcher. Flush any pending native splitter changes before saving:
+
+```csharp
+var json = System.Text.Json.JsonSerializer.Serialize(Matrix.GetSnapshot());
+var saved = System.Text.Json.JsonSerializer.Deserialize<DashboardMatrixLayout>(json)!;
+Matrix.RestoreLayout(saved);
+```
+
+Snapshots contain row/column star weights and cell IDs, coordinates, and content IDs. They never contain controls or factories. Weights need not sum to one. Snapshot methods such as `InsertRowAfter` and `WithContent` return new snapshots; apply them with `RestoreLayout`. Restoring is an explicit host operation and is available even when interactive structural editing is disabled. Content-specific control state is not serialized in v1.
+
+### Content ownership
+
+Each factory must return a fresh, unparented control. Existing assignments retain their instances across structural edits and resizing. Unknown IDs show an unavailable placeholder while retaining the ID. Replacing the catalog or changing an attached observable catalog reconciles content; `RefreshContent()` handles changes in ordinary collections. Observable catalog changes made while detached reconcile when reattached. Ordinary enumerable catalogs are materialized once per assignment or explicit refresh. A replaced definition recreates its matching instances. Factory failure keeps the previous assignments and live controls; the menu displays an error and public APIs throw.
+
+`ClearContent(cellId)` clears an assignment. `MoveContent(sourceId, targetId)` requires an empty target, except that moving a cell to itself is a no-op; `SwapContent(firstId, secondId)` swaps occupied or empty assignments. Both preserve the complete tile and its content instance. The tile menu also offers **Move / swap tile** with row/column targets. Matrix tiles cannot span cells or resize individually; native splitters resize whole rows/columns.
+
+`DisposeRemovedContent` defaults to false, matching the opt-in policy of `DashboardItemsPanel`. When enabled, discarded generated `IDisposable` controls are disposed on replacement, clearing, removal, catalog reconciliation, or explicit matrix disposal. Newly generated controls from an unsuccessful transaction are also released under this policy. Disposal failures are aggregated after all discarded controls receive a disposal attempt; an already committed layout remains applied.
+
+Visual detachment (for example, switching tabs) preserves hosted instances and unsubscribes from the catalog. Call `DashboardMatrix.Dispose()` when permanently retiring a matrix that owns resources; it is idempotent. Reattaching a disposed matrix does not reactivate it.
+
+See the demo's **Matrix** tab for a 2 × 3 example with editable notes, a scrollable event list, host-controlled removal protection, swap, and JSON snapshot save/restore.
+
+## Shared content across both dashboards
+
+`DashboardContentTile : Tile` brings the same catalog and selection menu to the classic dashboard. Layout behavior stays separate: tiles retain X/Y/W/H placement, while matrix cells use global rows and columns. Both use the same indexed catalog, content factory validation, picker, lifecycle policy, and change events.
+
+```csharp
+var catalog = DashboardContentCatalog.FromItems(
+    widgets, widget => widget.Id, widget => widget.Title,
+    widget => CreateWidgetControl(widget));
+
+var tile = new DashboardContentTile
+{
+    ContentDefinitions = catalog,
+    ContentId = widgets[0].Id,
+    DisposeRemovedContent = true
+};
+dashboard.Children.Add(tile);
+matrix.ContentDefinitions = catalog;
+```
+
+`DashboardContentCatalog` is observable and rejects duplicate IDs before mutation. Each selection creates an independent control. `ContentChanging` can veto changes, `ContentChanged` reports committed assignments, and `ContentFailed` reports factory failures. `ContentId` on `DashboardContentTile` supports two-way binding. Use `SetContent(id)` or `SetContent(null)` to select or clear its body.
+
+Use `FromTemplate(items, idSelector, titleSelector, dataTemplate)` to adapt an existing item template. Use `FromTiles(items, idSelector, titleSelector, tileFactory)` to adapt classic tile recipes: it creates fresh complete tiles, preserving their header, custom template, and settings. Existing live tiles cannot be cloned or shared between parents; provide a factory or template for the underlying tile models. The **Same tiles, two layouts** demo tab shows the same catalog in both dashboard types.
+
+Both generated-content hosts retain content during temporary visual detachment. Call `Dispose()` when permanently retiring a host, and opt into disposal of generated controls with `DisposeRemovedContent` or `DisposeRemovedTiles`. `DashboardItemsPanel` preserves generated instances on move/reset when the same item references remain; replacing its template regenerates template-created views. Direct `Control` items are borrowed: their DataContext and lifetime remain owned by the application.
+
+Classic drag/resize commits now update bindable tile coordinates through `DashboardPanel.TrySetPlacement`. Hosts can veto through `PlacementChanging` or persist accepted changes through `PlacementChanged`. Only direct dashboard tiles participate; nested tile content cannot drag or resize its outer dashboard.
+
+Shared tile templates preserve custom `HeaderContent` / `HeaderTemplate`, optional `HeaderActions`, and invalid-placement feedback. Resize grip chrome is shared across the core, chart, and tree-grid tile themes. Matrix menu text can be overridden with resources such as `DashboardAddContent`, `DashboardChangeContent`, `DashboardClearContent`, and `DashboardInsertRowAbove`.
+
+### Common chrome resources
+
+Both dashboard types share corner radii, body padding, header metrics, and action button styling. Override these resources at application or container scope:
+
+```xml
+<CornerRadius x:Key="DashboardCellCornerRadius">6</CornerRadius>
+<Thickness x:Key="DashboardContentPadding">10</Thickness>
+<x:Double x:Key="DashboardHeaderMinHeight">32</x:Double>
+<x:Double x:Key="DashboardActionSize">28</x:Double>
+```
+
+Increase the action size for touch-heavy applications. Action targets remain hit-testable before hover and stay visible while their flyout is open. Plain header titles use ellipsis when space is tight and expose the full title in a tooltip; custom header content and templates retain their own presentation.
+
+The shared action and empty-cell labels can be localized through `DashboardContentActionsLabel` and `DashboardAddContentLabel`. Set `DashboardEmpty` for the empty-cell title before creating content; menu strings are resolved when menus are built.
+
+### Complete tiles and content bodies
+
+Every matrix slot hosts a `Tile` directly. There is no separate matrix-cell visual template. Use exactly one factory on each `DashboardContentDefinition`:
+
+- `Factory` creates a content body. The matrix supplies a `DashboardContentTile`.
+- `TileFactory` creates a complete tile (text, chart, tree grid, or custom tile). The matrix hosts it directly, without a wrapping or nested tile.
+
+```csharp
+var catalog = new DashboardContentCatalog
+{
+    new() { Id = "notes", Title = "Notes",
+        Factory = () => new TextBox { AcceptsReturn = true } },
+    new() { Id = "status", Title = "Status tile",
+        TileFactory = () => new TextTile { TileHeader = "Status", Text = "Healthy" } }
+};
+matrix.ContentDefinitions = catalog;
+matrix.SetContent(matrix.Layout.Cells[0].Id, "status");
+
+// The same catalog creates a native tile for the classic dashboard.
+classic.Children.Add(catalog.CreateTile("status"));
+classic.Children.Add(catalog.CreateTile("notes"));
+```
+
+A standalone `DashboardContentTile` selects body definitions; complete tiles belong directly in their dashboard. `FromTiles` produces `TileFactory` entries. `FromTemplate` is for body templates; use `FromTiles` when the template builds tiles.
+
+Matrix header visibility and resize suppression are host overrides. They do not overwrite the tile's `IsHeaderVisible`, `IsResizable`, spans, or `HeaderActions`. Built-in templates use `IsHeaderPresented`, `IsResizeGripVisible`, and `EffectiveHeaderActions`; custom tile templates should bind those effective properties as well. Matrix structural actions and movement are available through the shared header (or the adjacent boundary menu when hidden), with existing custom actions under **Tile actions**. Classic resize handling lives in a separate interaction behavior.
+
+`GetTile(cellId)` returns the current live tile after the matrix template is applied. Use matrix assignment APIs for selection and removal so persistence, cancellation, and disposal remain consistent. Controls and tiles never become part of the saved layout; their stable catalog IDs remain the persisted assignments.
+
+### Boundary and tile spacing
+
+Matrix splitters are invisible at rest and appear when the pointer is over a boundary or when the splitter has keyboard focus. Their hit targets stay active for touch and pointer resizing. The classic dashboard now defaults to a 3 DIP `TileMargin` on each edge, producing the same 6 DIP gap as the matrix's `CellSpacing`. Explicit application margins and spacing still take precedence. The reserved matrix gap is `max(CellSpacing, SplitterThickness)`; `SplitterHitThickness` can overlap adjacent cell edges without enlarging that gap. Minimum cell sizes can make a large matrix exceed its available space, so limit its dimensions or place it in a suitable scrolling container.
+
+The **Same tiles, two layouts** demo demonstrates one catalog supplying both layout types, independent content instances, and new catalog entries appearing in both content menus. Its labels explain the different movement and resizing controls.
+
+### Headerless boundary menus
+
+With `IsHeaderVisible="False"`, each internal boundary segment and outer edge has a subtle, focusable action button. It opens **Insert row here** / **Insert column here** and **Cell above/below** or **Cell left/right** submenus for that segment. Cell menus offer content selection, clearing, moving/swapping, custom tile actions, and row/column removal through the existing cancellable host hooks. Outer-edge actions keep a 1×1 matrix fully editable. Resizing and structural-edit capability flags remain independent of content editing.
+
+The rest of each native splitter remains draggable. Hover a boundary to reveal its menu button, then move onto the button to open it. It stays visible while its menu is open and hides after interaction ends. On touch, tap a boundary to reveal the button, then tap the button; dragging the boundary still resizes. Tap elsewhere to dismiss a revealed button. Keyboard focus also reveals boundary actions.
+
+Buttons temporarily overlap adjacent tile edges. When hidden, they are not hit-testable. `BoundaryActionSize` controls only the overlay size (24 DIP by default, minimum 16); it does not reserve space. Both header modes retain the configured `CellSpacing` and `Padding` (6 DIP defaults), including the outer perimeter. Toggling headers preserves tile instances, assignments, and row/column weights.
 
 ## License
 

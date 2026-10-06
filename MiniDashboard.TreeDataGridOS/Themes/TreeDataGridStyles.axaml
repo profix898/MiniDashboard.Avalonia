@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:MiniDashboard.Avalonia.Converters;assembly=MiniDashboard.Avalonia"
         xmlns:dashboard="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
-        xmlns:controls="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid"
-        x:Class="MiniDashboard.Avalonia.TreeDataGrid.Themes.TreeDataGridStyles">
+        xmlns:controls="clr-namespace:MiniDashboard.Avalonia.TreeDataGridOS"
+        x:Class="MiniDashboard.Avalonia.TreeDataGridOS.Themes.TreeDataGridStyles">
 
     <!-- Base theme for TreeDataGrid -->
     <StyleInclude Source="avares://Avalonia.Controls.TreeDataGrid/Themes/Fluent.axaml" />

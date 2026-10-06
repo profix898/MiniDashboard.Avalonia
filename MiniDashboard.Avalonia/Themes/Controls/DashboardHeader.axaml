@@ -1,0 +1,47 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:MiniDashboard.Avalonia">
+    <ControlTheme x:Key="{x:Type controls:DashboardHeader}" TargetType="controls:DashboardHeader">
+        <Setter Property="MinHeight" Value="{DynamicResource DashboardHeaderMinHeight}" />
+        <Setter Property="Background" Value="{DynamicResource TileHeaderBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TileForegroundBrush}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock x:Name="PART_Title" Text="{TemplateBinding Title}"
+                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                   VerticalAlignment="Center" Margin="8,4"
+                                   ToolTip.Tip="{TemplateBinding Title}" />
+                        <ContentPresenter x:Name="PART_CustomHeader" IsVisible="False"
+                                          Content="{TemplateBinding DisplayContent}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          VerticalAlignment="Center" Margin="8,4"
+                                          RecognizesAccessKey="False" />
+                        <Button Grid.Column="1" x:Name="PART_Actions"
+                                Theme="{StaticResource DashboardActionButtonTheme}"
+                                IsVisible="False" Flyout="{TemplateBinding Actions}" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Style Selector="^:custom /template/ TextBlock#PART_Title">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^:custom /template/ ContentPresenter#PART_CustomHeader">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="^:invalid">
+            <Setter Property="Background" Value="#40FF0000" />
+        </Style>
+        <Style Selector="^:actions /template/ Button#PART_Actions">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="^:pointerover /template/ Button#PART_Actions">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="^:focus-within /template/ Button#PART_Actions">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

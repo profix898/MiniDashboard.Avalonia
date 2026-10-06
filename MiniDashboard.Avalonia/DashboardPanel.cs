@@ -1,43 +1,13 @@
-﻿// DashboardPanel.cs
+// DashboardPanel.cs
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 
 namespace MiniDashboard.Avalonia;
-
-/// <summary>
-/// Describes why a dashboard placement request could not be applied exactly.
-/// </summary>
-public enum DashboardPlacementFailureReason
-{
-    /// <summary>
-    /// The requested placement was accepted exactly.
-    /// </summary>
-    None,
-
-    /// <summary>
-    /// The requested placement exceeded the dashboard bounds.
-    /// </summary>
-    OutOfBounds,
-
-    /// <summary>
-    /// The requested placement collided with another child.
-    /// </summary>
-    Collision,
-
-    /// <summary>
-    /// The requested placement was smaller than the minimum supported size.
-    /// </summary>
-    MinSize,
-
-    /// <summary>
-    /// No free placement could be found for the requested child.
-    /// </summary>
-    NoSpace
-}
 
 /// <summary>
 /// A grid-like panel that arranges tile tiles into a fixed number of rows and columns.
@@ -81,9 +51,8 @@ public class DashboardPanel : Panel
     /// Read-only property that reports why the most recent placement request could not be applied exactly.
     /// </summary>
     public static readonly DirectProperty<DashboardPanel, DashboardPlacementFailureReason> LastPlacementFailureReasonProperty =
-        AvaloniaProperty.RegisterDirect<DashboardPanel, DashboardPlacementFailureReason>(
-            nameof(LastPlacementFailureReason),
-            panel => panel.LastPlacementFailureReason);
+        AvaloniaProperty.RegisterDirect<DashboardPanel, DashboardPlacementFailureReason>(nameof(LastPlacementFailureReason),
+                                                                                         panel => panel.LastPlacementFailureReason);
 
     /// <summary>
     /// Attached property for the height (span in rows) of tile tiles.
@@ -153,7 +122,7 @@ public class DashboardPanel : Panel
     /// Styled property for the global margin around tiles.
     /// </summary>
     public static readonly StyledProperty<double> TileMarginProperty =
-        AvaloniaProperty.Register<DashboardPanel, double>(nameof(TileMargin), 4d);
+        AvaloniaProperty.Register<DashboardPanel, double>(nameof(TileMargin), 3d);
 
     /// <summary>
     /// Attached property for the width (span in columns) of tile tiles.
@@ -174,7 +143,7 @@ public class DashboardPanel : Panel
         AvaloniaProperty.RegisterAttached<DashboardPanel, Control, int>("Y");
 
     // Keep a mapping of last known valid position/size for each tile
-    private readonly Dictionary<Control, (int x, int y, int w, int h)> _lastValid = new();
+    private readonly Dictionary<Control, (int x, int y, int w, int h)> _lastValid = new Dictionary<Control, (int x, int y, int w, int h)>();
     private readonly PreviewOverlay _overlay;
 
     private Control?[,]? _cells;
@@ -183,6 +152,83 @@ public class DashboardPanel : Panel
     private DashboardPlacementFailureReason _lastPlacementFailureReason;
     private (int x, int y, int w, int h, bool valid)? _preview;
 
+    /// <summary>Raised before an explicit placement edit; hosts can veto it.</summary>
+    public event EventHandler<DashboardPlacementChangingEventArgs>? PlacementChanging;
+
+    /// <summary>Raised after an explicit placement edit is applied.</summary>
+    public event EventHandler<DashboardPlacementChangingEventArgs>? PlacementChanged;
+
+    private bool _applyingPlacement;
+
+    /// <summary>Applies a valid direct-child placement without replacing existing tile bindings.</summary>
+    public bool TrySetPlacement(Control child, int x, int y, int width, int height)
+    {
+        VerifyAccess();
+        if (child.Parent != this || IsDashboardInternalChild(child))
+            throw new ArgumentException("Placement requires a direct dashboard child.", nameof(child));
+        if (_applyingPlacement)
+            throw new InvalidOperationException("Placement edits cannot be nested inside change events.");
+        if (width < 1 || height < 1 || (child is Tile minimum && (width < minimum.MinGridW || height < minimum.MinGridH)))
+        {
+            LastPlacementFailureReason = DashboardPlacementFailureReason.MinSize;
+            
+            return false;
+        }
+        if (x < 0 || y < 0 || width > GridColumns || height > GridRows || x > GridColumns - width || y > GridRows - height)
+        {
+            LastPlacementFailureReason = DashboardPlacementFailureReason.OutOfBounds;
+            
+            return false;
+        }
+        
+        BuildOccupancy(child);
+        if (!IsFree(x, y, width, height))
+        {
+            LastPlacementFailureReason = DashboardPlacementFailureReason.Collision;
+            
+            return false;
+        }
+        
+        var before = new DashboardPlacement(GetX(child), GetY(child), GetW(child), GetH(child));
+        var after = new DashboardPlacement(x, y, width, height);
+        LastPlacementFailureReason = DashboardPlacementFailureReason.None;
+        if (before == after)
+            return true;
+        
+        _applyingPlacement = true;
+        
+        try
+        {
+            var args = new DashboardPlacementChangingEventArgs(child, before, after);
+            PlacementChanging?.Invoke(this, args);
+            if (args.Cancel)
+                return false;
+            
+            if (child is Tile tile)
+            {
+                tile.SetCurrentValue(Tile.GridXProperty, x);
+                tile.SetCurrentValue(Tile.GridYProperty, y);
+                tile.SetCurrentValue(Tile.GridWProperty, width);
+                tile.SetCurrentValue(Tile.GridHProperty, height);
+            }
+            
+            child.SetCurrentValue(XProperty, x);
+            child.SetCurrentValue(YProperty, y);
+            child.SetCurrentValue(WProperty, width);
+            child.SetCurrentValue(HProperty, height);
+            _lastValid[child] = (x, y, width, height);
+            LastPlacementFailureReason = DashboardPlacementFailureReason.None;
+            InvalidateMeasure();
+            PlacementChanged?.Invoke(this, args);
+            
+            return true;
+        }
+        finally
+        {
+            _applyingPlacement = false;
+        }
+    }
+
     /// <summary>
     /// Creates a new DashboardPanel and inserts the drawing overlay into the visual tree.
     /// </summary>
@@ -190,6 +236,14 @@ public class DashboardPanel : Panel
     {
         _overlay = new PreviewOverlay { IsHitTestVisible = false };
         Children.Insert(0, _overlay);
+        Children.CollectionChanged += (_, _) =>
+        {
+            foreach (var removed in _lastValid.Keys.Where(c => !Children.Contains(c)).ToArray())
+                _lastValid.Remove(removed);
+            
+            if (_cells is not null)
+                Array.Clear(_cells);
+        };
     }
 
     /// <summary>
@@ -467,6 +521,7 @@ public class DashboardPanel : Panel
             var rect = new Rect(x * cell.Width, y * cell.Height, w * cell.Width, h * cell.Height);
             if (margin > 0)
                 rect = rect.Deflate(new Thickness(margin));
+            
             tile.Arrange(rect);
             _lastValid[tile] = (x, y, w, h);
             Mark(x, y, w, h, tile);
@@ -500,7 +555,7 @@ public class DashboardPanel : Panel
 
     /// <summary>
     /// Attempts to resolve a move for a tile to the requested coordinates.
-    /// Returns true when resolved exactly, false when a fallback was used.
+    /// Returns true when a free destination is found, including adjusted positions; false when only a fallback is available.
     /// </summary>
     public bool TryResolveMove(Control tile, int targetX, int targetY, out int resolvedX, out int resolvedY)
     {
@@ -513,6 +568,7 @@ public class DashboardPanel : Panel
 
         targetX = Math.Clamp(targetX, 0, Math.Max(0, columns - w));
         targetY = Math.Clamp(targetY, 0, Math.Max(0, rows - h));
+        
         var wasOutOfBounds = targetX != requestedX || targetY != requestedY;
 
         BuildOccupancy(tile);
@@ -521,6 +577,7 @@ public class DashboardPanel : Panel
             resolvedX = targetX;
             resolvedY = targetY;
             LastPlacementFailureReason = wasOutOfBounds ? DashboardPlacementFailureReason.OutOfBounds : DashboardPlacementFailureReason.None;
+            
             return true;
         }
 
@@ -530,6 +587,7 @@ public class DashboardPanel : Panel
         {
             (resolvedX, resolvedY) = best.Value;
             LastPlacementFailureReason = wasOutOfBounds ? DashboardPlacementFailureReason.OutOfBounds : DashboardPlacementFailureReason.Collision;
+            
             return true;
         }
 
@@ -539,18 +597,20 @@ public class DashboardPanel : Panel
             resolvedX = last.x;
             resolvedY = last.y;
             LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
+            
             return false;
         }
 
         resolvedX = targetX;
         resolvedY = targetY;
         LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
+        
         return false;
     }
 
     /// <summary>
     /// Attempts to resolve a resize to the requested width/height in cells.
-    /// Returns true when resolved exactly, false when a fallback was used.
+    /// Returns true when the bounded requested size fits; false when collision shrinking or a previous-size fallback is needed.
     /// </summary>
     public bool TryResolveResize(Control tile, int targetW, int targetH, out int resolvedW, out int resolvedH)
     {
@@ -563,6 +623,7 @@ public class DashboardPanel : Panel
 
         targetW = Math.Clamp(targetW, 1, Math.Max(1, columns - x));
         targetH = Math.Clamp(targetH, 1, Math.Max(1, rows - y));
+        
         var wasTooSmall = requestedW < 1 || requestedH < 1;
         var wasOutOfBounds = targetW != requestedW || targetH != requestedH;
 
@@ -571,11 +632,9 @@ public class DashboardPanel : Panel
         {
             resolvedW = targetW;
             resolvedH = targetH;
-            LastPlacementFailureReason = wasTooSmall
-                ? DashboardPlacementFailureReason.MinSize
-                : wasOutOfBounds
-                    ? DashboardPlacementFailureReason.OutOfBounds
-                    : DashboardPlacementFailureReason.None;
+            LastPlacementFailureReason = wasTooSmall ? DashboardPlacementFailureReason.MinSize :
+                wasOutOfBounds ? DashboardPlacementFailureReason.OutOfBounds : DashboardPlacementFailureReason.None;
+            
             return true;
         }
 
@@ -588,11 +647,9 @@ public class DashboardPanel : Panel
                 {
                     resolvedW = w;
                     resolvedH = h;
-                    LastPlacementFailureReason = wasTooSmall
-                        ? DashboardPlacementFailureReason.MinSize
-                        : wasOutOfBounds
-                            ? DashboardPlacementFailureReason.OutOfBounds
-                            : DashboardPlacementFailureReason.Collision;
+                    LastPlacementFailureReason = wasTooSmall ? DashboardPlacementFailureReason.MinSize :
+                        wasOutOfBounds ? DashboardPlacementFailureReason.OutOfBounds : DashboardPlacementFailureReason.Collision;
+                    
                     return false;
                 }
             }
@@ -604,12 +661,14 @@ public class DashboardPanel : Panel
             resolvedW = last.w;
             resolvedH = last.h;
             LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
+            
             return false;
         }
 
         resolvedW = 1;
         resolvedH = 1;
         LastPlacementFailureReason = DashboardPlacementFailureReason.NoSpace;
+        
         return false;
     }
 
@@ -656,6 +715,7 @@ public class DashboardPanel : Panel
     {
         if (_cells is null)
             return;
+        
         for (var cx = x; cx < x + w; cx++)
         {
             for (var cy = y; cy < y + h; cy++)
@@ -671,17 +731,20 @@ public class DashboardPanel : Panel
     {
         if (_cells is null)
             return true;
+        
         for (var cx = x; cx < x + w; cx++)
         {
             for (var cy = y; cy < y + h; cy++)
             {
                 if (cx < 0 || cy < 0 || cx >= _cellsColumns || cy >= _cellsRows)
                     return false;
+                
                 var occ = _cells[cx, cy];
                 if (occ is not null && occ != ignoreControl)
                     return false;
             }
         }
+        
         return true;
     }
 
@@ -703,6 +766,7 @@ public class DashboardPanel : Panel
                 if (IsFree(x, y2, w, h))
                     return (x, y2);
             }
+            
             for (var y = Math.Max(0, aroundY - r + 1); y <= Math.Min(rows - h, aroundY + r - 1); y++)
             {
                 // Left and right bands
@@ -714,6 +778,7 @@ public class DashboardPanel : Panel
                     return (x2, y);
             }
         }
+        
         return null;
     }
 
@@ -771,6 +836,7 @@ public class DashboardPanel : Panel
                     var gx = x * cw;
                     context.DrawLine(gridPen, new Point(gx, 0), new Point(gx, Bounds.Height));
                 }
+                
                 for (var y = 1; y < rows; y++)
                 {
                     var gy = y * ch;

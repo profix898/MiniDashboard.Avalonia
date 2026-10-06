@@ -1,7 +1,8 @@
 <Solution>
-  <Project Path="DemoApp/DemoApp.csproj" />
-  <Project Path="MiniDashboard.Avalonia/MiniDashboard.Avalonia.csproj" />
-  <Project Path="MiniDashboard.ScottPlot/MiniDashboard.Avalonia.ScottPlot.csproj" />
-  <Project Path="MiniDashboard.TreeDataGrid/MiniDashboard.Avalonia.TreeDataGrid.csproj" />
-  <Project Path="MiniDashboard.TreeDataGridOS/MiniDashboard.Avalonia.TreeDataGridOS.csproj" />
+    <Project Path="DemoApp/DemoApp.csproj"/>
+    <Project Path="MiniDashboard.Avalonia.Tests/MiniDashboard.Avalonia.Tests.csproj"/>
+    <Project Path="MiniDashboard.Avalonia/MiniDashboard.Avalonia.csproj"/>
+    <Project Path="MiniDashboard.ScottPlot/MiniDashboard.Avalonia.ScottPlot.csproj"/>
+    <Project Path="MiniDashboard.TreeDataGrid/MiniDashboard.Avalonia.TreeDataGrid.csproj"/>
+    <Project Path="MiniDashboard.TreeDataGridOS/MiniDashboard.Avalonia.TreeDataGridOS.csproj"/>
 </Solution>

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -13,7 +14,7 @@ namespace MiniDashboard.Avalonia;
 /// <summary>
 /// A dashboard panel that materializes an items source directly into dashboard child controls.
 /// </summary>
-public class DashboardItemsPanel : DashboardPanel
+public class DashboardItemsPanel : DashboardPanel, IDisposable
 {
     /// <summary>
     /// Defines the items used to generate dashboard children.
@@ -77,6 +78,9 @@ public class DashboardItemsPanel : DashboardPanel
 
     private readonly List<GeneratedChild> _generatedChildren = [];
     private INotifyCollectionChanged? _collectionChangedSource;
+    private bool _templateChanged;
+    private bool _disposed;
+    private bool _reconciling;
 
     static DashboardItemsPanel()
     {
@@ -89,7 +93,10 @@ public class DashboardItemsPanel : DashboardPanel
         ItemTemplateProperty.Changed.Subscribe(static args =>
         {
             if (args.Sender is DashboardItemsPanel panel)
+            {
+                panel._templateChanged = true;
                 panel.RebuildGeneratedChildren();
+            }
         });
     }
 
@@ -187,22 +194,29 @@ public class DashboardItemsPanel : DashboardPanel
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        SubscribeToCollection(ItemsSource);
-        RebuildGeneratedChildren();
+        if (!_disposed)
+        {
+            SubscribeToCollection(ItemsSource);
+            RebuildGeneratedChildren();
+        }
     }
 
     /// <inheritdoc />
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         UnsubscribeFromCollection();
-        ClearGeneratedChildren();
         base.OnDetachedFromVisualTree(e);
     }
 
     private void OnItemsSourceChanged()
     {
+        if (_disposed)
+            return;
+        
         UnsubscribeFromCollection();
-        SubscribeToCollection(ItemsSource);
+        if (this.IsAttachedToVisualTree())
+            SubscribeToCollection(ItemsSource);
+        
         RebuildGeneratedChildren();
     }
 
@@ -224,116 +238,151 @@ public class DashboardItemsPanel : DashboardPanel
         }
     }
 
-    private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        switch (e.Action)
-        {
-            case NotifyCollectionChangedAction.Add:
-                AddGeneratedItems(e.NewItems, e.NewStartingIndex);
-                break;
-
-            case NotifyCollectionChangedAction.Remove:
-                RemoveGeneratedItems(e.OldItems);
-                break;
-
-            case NotifyCollectionChangedAction.Replace:
-                RemoveGeneratedItems(e.OldItems);
-                AddGeneratedItems(e.NewItems, e.NewStartingIndex);
-                break;
-
-            case NotifyCollectionChangedAction.Move:
-            case NotifyCollectionChangedAction.Reset:
-                RebuildGeneratedChildren();
-                break;
-        }
-
-        InvalidateDashboardLayout();
-    }
+    private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => RebuildGeneratedChildren();
 
     private void RebuildGeneratedChildren()
     {
-        ClearGeneratedChildren();
-
-        if (!PreserveStaticChildren)
-            RemoveStaticChildren();
-
-        AddGeneratedItems(ItemsSource, -1);
-        InvalidateDashboardLayout();
-    }
-
-    private void AddGeneratedItems(IEnumerable? items, int itemIndex)
-    {
-        if (items is null)
+        if (_disposed || !this.IsAttachedToVisualTree())
             return;
-
-        var insertIndex = itemIndex >= 0 && itemIndex <= _generatedChildren.Count ? itemIndex : _generatedChildren.Count;
-        foreach (var item in items)
+        if (_reconciling)
+            throw new InvalidOperationException("ItemsSource cannot change during materialization.");
+        
+        _reconciling = true;
+        
+        try
         {
-            var control = MaterializeItem(item);
-            control.DataContext = item;
-            ApplyTileBindings(control);
+            var available = new List<GeneratedChild>(_generatedChildren);
+            var next = new List<GeneratedChild>();
+            var created = new List<GeneratedChild>();
+            try
+            {
+                foreach (var item in ItemsSource ?? Array.Empty<object>())
+                {
+                    // Reference identity preserves distinct equal-valued model objects and repeated occurrences.
+                    var index = _templateChanged && item is not Control ? -1 : available.FindIndex(c => ReferenceEquals(c.Item, item));
+                    if (index >= 0)
+                    {
+                        next.Add(available[index]);
+                        available.RemoveAt(index);
+                        continue;
+                    }
+                    
+                    var control = MaterializeItem(item);
+                    if (next.Any(c => ReferenceEquals(c.Control, control)) ||
+                        control.Parent is not null || control.GetVisualParent() is not null)
+                        throw new InvalidOperationException("An item template must produce a fresh, unparented control.");
+                    
+                    var child = new GeneratedChild(item, control, item is not Control);
+                    created.Add(child);
+                    if (child.Owned)
+                    {
+                        control.DataContext = item;
+                        ApplyTileBindings(control);
+                    }
+                    
+                    next.Add(child);
+                }
+            }
+            catch
+            {
+                DisposeChildren(created);
+                throw;
+            }
+            
+            foreach (var removed in available)
+                Children.Remove(removed.Control);
+            
+            _generatedChildren.Clear();
+            _generatedChildren.AddRange(next);
+            if (!PreserveStaticChildren)
+            {
+                foreach (var child in Children.Where(c => !IsDashboardInternalChild(c) &&
+                                                          !next.Any(g => ReferenceEquals(g.Control, c))).ToArray())
+                    Children.Remove(child);
+            }
 
-            _generatedChildren.Insert(insertIndex, new GeneratedChild(item, control));
-            Children.Add(control);
-            insertIndex++;
+            // Preserve attachment and focus on collection moves. Child order is updated in place.
+            foreach (var child in next)
+            {
+                if (!Children.Contains(child.Control))
+                    Children.Add(child.Control);
+            }
+            
+            var slots = Children.Select((c, i) => (Control: c, Index: i))
+                                .Where(p => next.Any(g => ReferenceEquals(g.Control, p.Control))).Select(p => p.Index).ToArray();
+            for (var i = 0; i < next.Count; i++)
+            {
+                var oldIndex = Children.IndexOf(next[i].Control);
+                if (oldIndex != slots[i])
+                    Children.Move(oldIndex, slots[i]);
+            }
+            
+            _templateChanged = false;
+            InvalidateMeasure();
+            DisposeChildren(available);
+        }
+        finally
+        {
+            _reconciling = false;
         }
     }
 
-    private void RemoveGeneratedItems(IList? items)
+    private void DisposeChildren(IEnumerable<GeneratedChild> children)
     {
-        if (items is null)
+        if (!DisposeRemovedTiles)
             return;
-
-        foreach (var item in items)
+        
+        List<Exception>? failures = null;
+        foreach (var child in children)
         {
-            var index = _generatedChildren.FindIndex(child => ReferenceEquals(child.Item, item) || Equals(child.Item, item));
-            if (index >= 0)
-                RemoveGeneratedChildAt(index);
-        }
-    }
-
-    private void ClearGeneratedChildren()
-    {
-        for (var i = _generatedChildren.Count - 1; i >= 0; i--)
-            RemoveGeneratedChildAt(i);
-    }
-
-    private void RemoveGeneratedChildAt(int index)
-    {
-        var child = _generatedChildren[index];
-        _generatedChildren.RemoveAt(index);
-        Children.Remove(child.Control);
-
-        if (DisposeRemovedTiles && child.Control is IDisposable disposable)
-            disposable.Dispose();
-    }
-
-    private void RemoveStaticChildren()
-    {
-        for (var i = Children.Count - 1; i >= 0; i--)
-        {
-            var child = Children[i];
-            if (child is null || IsDashboardInternalChild(child) || _generatedChildren.Exists(generated => ReferenceEquals(generated.Control, child)))
+            if (!child.Owned || child.Control is not IDisposable disposable)
                 continue;
-
-            Children.RemoveAt(i);
+            
+            try
+            {
+                disposable.Dispose();
+            }
+            catch (Exception error)
+            {
+                (failures ??= new List<Exception>()).Add(error);
+            }
         }
+        if (failures is not null)
+            throw new AggregateException(failures);
+    }
+
+    /// <summary>Permanently releases generated children; visual detachment alone preserves them.</summary>
+    public void Dispose()
+    {
+        VerifyAccess();
+        if (_disposed)
+            return;
+        if (_reconciling)
+            throw new InvalidOperationException("Cannot dispose during materialization.");
+        
+        _disposed = true;
+        UnsubscribeFromCollection();
+        
+        var children = _generatedChildren.ToArray();
+        _generatedChildren.Clear();
+        foreach (var child in children)
+            Children.Remove(child.Control);
+        
+        DisposeChildren(children);
+        GC.SuppressFinalize(this);
     }
 
     private Control MaterializeItem(object? item)
     {
         if (item is Control control)
             return control;
-
+        
         var template = this.FindDataTemplate(item, ItemTemplate);
         if (template is null)
             throw new InvalidOperationException($"DashboardItemsPanel could not find an item template for item type '{item?.GetType().FullName ?? "<null>"}'.");
-
-        var built = template.Build(item);
-        if (built is Control builtControl)
-            return builtControl;
-
-        throw new InvalidOperationException($"DashboardItemsPanel item template for item type '{item?.GetType().FullName ?? "<null>"}' built '{built?.GetType().FullName ?? "<null>"}' instead of an Avalonia Control.");
+        
+        return template.Build(item) ??
+               throw new InvalidOperationException("DashboardItemsPanel templates must create an Avalonia Control.");
     }
 
     private void ApplyTileBindings(Control control)
@@ -360,5 +409,5 @@ public class DashboardItemsPanel : DashboardPanel
         InvalidateArrange();
     }
 
-    private sealed record GeneratedChild(object? Item, Control Control);
+    private sealed record GeneratedChild(object? Item, Control Control, bool Owned);
 }

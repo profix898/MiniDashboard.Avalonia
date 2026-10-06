@@ -1,11 +1,12 @@
-using Avalonia;
-using Avalonia.Controls;
-using DemoApp.Models;
 using System;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Collections.ObjectModel;
 using System.Linq;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using DemoApp.Models;
 
 namespace DemoApp;
 
@@ -17,10 +18,20 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Closed += (_, _) =>
+        {
+            DynamicTiles.CollectionChanged -= OnDynamicTilesChanged;
+            foreach (var tile in DynamicTiles)
+                tile.PropertyChanged -= OnDynamicTilePropertyChanged;
+            
+            CatalogExample.Dispose();
+            MatrixExample.Dispose();
+            DynamicDashboard.Dispose();
+        };
 
         ChartsModel = new ChartsModel();
         DynamicTiles.CollectionChanged += OnDynamicTilesChanged;
-    SeedDynamicTiles();
+        SeedDynamicTiles();
         UpdateDynamicLayoutSummary();
 
         DataContext = this;
@@ -37,9 +48,8 @@ public partial class MainWindow : Window
     }
 
     public static readonly DirectProperty<MainWindow, string> DynamicLayoutSummaryProperty =
-        AvaloniaProperty.RegisterDirect<MainWindow, string>(
-            nameof(DynamicLayoutSummary),
-            window => window.DynamicLayoutSummary);
+        AvaloniaProperty.RegisterDirect<MainWindow, string>(nameof(DynamicLayoutSummary),
+                                                            window => window.DynamicLayoutSummary);
 
     public ObservableCollection<DashboardTableRow> TableRows { get; } =
     [
@@ -48,27 +58,23 @@ public partial class MainWindow : Window
         new DashboardTableRow { Service = "Event Store", Region = "ap-south", Status = "Degraded" }
     ];
 
-    private void AddDynamicTextTile_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void AddDynamicTextTile_Click(object? sender, RoutedEventArgs e)
     {
         var offset = DynamicTiles.Count % 5;
         DynamicTiles.Add(new DynamicTextTileViewModel
         {
-            Title = $"Note {_dynamicTileCounter++}",
-            Text = "Added at runtime. Resize me and the summary updates.",
-            X = offset * 2,
-            Y = 7,
-            Width = 2,
+            Title = $"Note {_dynamicTileCounter++}", Text = "Added at runtime. Resize me and the summary updates.", X = offset * 2, Y = 7, Width = 2,
             Height = 2
         });
     }
 
-    private void RemoveDynamicTile_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void RemoveDynamicTile_Click(object? sender, RoutedEventArgs e)
     {
         if (DynamicTiles.Count > 0)
             DynamicTiles.RemoveAt(DynamicTiles.Count - 1);
     }
 
-    private void ResetDynamicTiles_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void ResetDynamicTiles_Click(object? sender, RoutedEventArgs e)
     {
         foreach (var tile in DynamicTiles)
             tile.PropertyChanged -= OnDynamicTilePropertyChanged;

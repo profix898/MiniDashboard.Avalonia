@@ -6,7 +6,7 @@ using Avalonia.Controls;
 namespace MiniDashboard.Avalonia;
 
 /// <summary>
-/// Tile that displays read-only tabular data using an Avalonia <see cref="TableView"/>.
+/// Tile that displays read-only tabular data using an Avalonia <see cref="TableView" />.
 /// </summary>
 public class TableViewTile : Tile
 {
@@ -14,10 +14,9 @@ public class TableViewTile : Tile
     /// Defines the collection of columns displayed by the table.
     /// </summary>
     public static readonly DirectProperty<TableViewTile, AvaloniaList<TableViewColumn>> ColumnsProperty =
-        AvaloniaProperty.RegisterDirect<TableViewTile, AvaloniaList<TableViewColumn>>(
-            nameof(Columns),
-            tile => tile.Columns,
-            (tile, value) => tile.Columns = value);
+        AvaloniaProperty.RegisterDirect<TableViewTile, AvaloniaList<TableViewColumn>>(nameof(Columns),
+                                                                                      tile => tile.Columns,
+                                                                                      (tile, value) => tile.Columns = value);
 
     /// <summary>
     /// Defines whether users can resize table columns.

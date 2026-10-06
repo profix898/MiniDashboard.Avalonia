@@ -65,6 +65,7 @@ public class BarsPlotTile : CartesianPlotTile
                 avaPlot.Plot.Add.Bars(ys);
             };
             ComposePlotBuilder();
+            
             return;
         }
 
@@ -77,6 +78,7 @@ public class BarsPlotTile : CartesianPlotTile
                 avaPlot.Plot.Add.Bars(ys);
             };
             ComposePlotBuilder();
+            
             return;
         }
 

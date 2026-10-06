@@ -218,8 +218,10 @@ public class CartesianPlotTile : PlotTile
             // Styling layer (titles & labels)
             if (!String.IsNullOrWhiteSpace(Title))
                 avaPlot.Plot.Title(Title);
+            
             if (!String.IsNullOrWhiteSpace(XLabel))
                 avaPlot.Plot.XLabel(XLabel);
+            
             if (!String.IsNullOrWhiteSpace(YLabel))
                 avaPlot.Plot.YLabel(YLabel);
 
