@@ -411,7 +411,8 @@ public partial class DashboardMatrix : TemplatedControl, IDisposable, IDashboard
             SynchronizeWeights();
             RebuildGrid();
         }
-        else if (change.Property == CanModifyStructureProperty || change.Property == DashboardContentPicker.PickerProperty)
+        else if (change.Property == CanModifyStructureProperty || change.Property == DashboardContentPicker.PickerProperty ||
+                 change.Property == DashboardContentPicker.OpenOnTitleClickProperty)
             RenderCells();
     }
 

@@ -378,7 +378,7 @@ public class SharedContentTests
         try
         {
             var title = header.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "PART_Title");
-            var button = header.GetVisualDescendants().OfType<Button>().Single();
+            var button = header.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_Actions");
 
             Assert.Equal(TextTrimming.CharacterEllipsis, title.TextTrimming);
             Assert.True(title.Bounds.Width < 160);
@@ -413,7 +413,7 @@ public class SharedContentTests
         var window = Show(header);
         try
         {
-            var button = header.GetVisualDescendants().OfType<Button>().Single();
+            var button = header.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_Actions");
 
             Assert.Equal(0, button.Opacity);
 

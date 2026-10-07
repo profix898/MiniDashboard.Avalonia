@@ -99,6 +99,8 @@ public class DashboardContentTile : Tile, IDisposable
         _menu.Items.Add(DashboardContentMenu.Action(this, DashboardContentMenu.Text(this, "DashboardClearContent", "Clear content"),
                                                     () => SetContent(null), ContentId is not null));
         DashboardContentMenu.FillPickerFlyout(_addMenu, this, _catalog.Where(d => d.TileFactory is null && d.ContextTileFactory is null), id => SetContent(id));
+        DashboardContentMenu.ConfigureTitleAction(this, _catalog.Where(d => d.TileFactory is null && d.ContextTileFactory is null),
+                                                  ContentId, id => SetContent(id), _addMenu);
     }
 
     /// <inheritdoc />

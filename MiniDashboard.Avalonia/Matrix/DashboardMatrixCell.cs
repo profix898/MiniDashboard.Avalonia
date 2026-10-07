@@ -34,8 +34,11 @@ internal sealed class DashboardMatrixCell
     public void Update(bool headers)
     {
         DashboardContentPicker.SetPicker(Tile, DashboardContentPicker.GetPicker(_owner));
+        DashboardContentPicker.SetOpenOnTitleClick(Tile, DashboardContentPicker.GetOpenOnTitleClick(_owner));
         Populate(_menu);
         DashboardContentMenu.FillPickerFlyout(_addMenu, Tile, _owner.GetCatalog(), id => _owner.SetContent(_id, id));
+        DashboardContentMenu.ConfigureTitleAction(Tile, _owner.GetCatalog(), _owner.Layout.GetCell(_id).ContentId,
+                                                  id => _owner.SetContent(_id, id), _addMenu);
         Tile.SetMatrixHost(headers, _menu, _addMenu);
     }
 
@@ -45,6 +48,7 @@ internal sealed class DashboardMatrixCell
         _menu.Hide();
         _addMenu.Hide();
         Tile.SetMatrixHost(null, null, null);
+        Tile.ClearValue(DashboardContentMenu.TitleActionProperty);
         if (Tile is DashboardContentTile { IsMatrixManaged: true, ContentId: null } empty)
             empty.ReleaseMatrixContent();
     }

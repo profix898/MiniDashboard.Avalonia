@@ -16,6 +16,18 @@ internal static class DashboardContentMenu
     internal static readonly AttachedProperty<Action<Control>?> DirectAddActionProperty =
         AvaloniaProperty.RegisterAttached<Tile, Control, Action<Control>?>("DirectAddAction");
 
+    internal static readonly AttachedProperty<Action<Control>?> TitleActionProperty =
+        AvaloniaProperty.RegisterAttached<Tile, Control, Action<Control>?>("TitleAction");
+
+    internal static void ConfigureTitleAction(Tile tile, IEnumerable<DashboardContentDefinition> catalog,
+                                              string? selected, Func<string, bool> select, MenuFlyout compactMenu)
+    {
+        var picker = DashboardContentPicker.GetPicker(tile);
+        tile.SetValue(TitleActionProperty, picker != null
+                          ? anchor => OpenPicker(tile, anchor, picker, catalog, selected, select)
+                          : anchor => compactMenu.ShowAt(anchor));
+    }
+
     private static void OpenPicker(Control owner, Control anchor, IDashboardContentPicker picker,
                                    IEnumerable<DashboardContentDefinition> catalog, string? selected, Func<string, bool> select)
     {

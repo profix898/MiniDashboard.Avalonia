@@ -26,6 +26,58 @@ namespace MiniDashboard.Avalonia.Tests;
 public class MatrixControlTests
 {
     [AvaloniaFact]
+    public async Task ContentChoiceAcceptsOnePointerClickWithoutConfirming()
+    {
+        using var host = new Host(1, 1);
+        var definitions = new[] { Definition("a", () => new TextBox()), Definition("b", () => new TextBox()) };
+        var task = new DashboardContentPicker().PickAsync(host.Matrix, definitions, "a");
+        Dispatcher.UIThread.RunJobs();
+        host.Window.UpdateLayout();
+        Assert.False(task.IsCompleted);
+
+        var flyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(host.Matrix));
+        var panel = Assert.IsType<StackPanel>(flyout.Content);
+        var list = panel.Children.OfType<ListBox>().Single();
+        var item = list.Items.OfType<ListBoxItem>().Single(i => Equals(i.Tag, "b"));
+        var popup = Assert.IsAssignableFrom<TopLevel>(TopLevel.GetTopLevel(item));
+        popup.UpdateLayout();
+        var point = item.TranslatePoint(new Point(item.Bounds.Width / 2, item.Bounds.Height / 2), popup)!.Value;
+        popup.MouseDown(point, MouseButton.Left);
+        popup.MouseUp(point, MouseButton.Left);
+
+        Assert.Equal("b", await task.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [AvaloniaFact]
+    public async Task HeaderTitlePickerIsOptInAndOpensSearchDirectly()
+    {
+        using var host = new Host(1, 1);
+        host.Matrix.ContentDefinitions = new[] { Definition("a", () => new TextBox()) };
+        host.Matrix.SetContent(host.Matrix.Layout.Cells[0].Id, "a");
+        DashboardContentPicker.SetPicker(host.Matrix, new DashboardContentPicker());
+        host.Window.UpdateLayout();
+        var tile = host.Matrix.GetTile(host.Matrix.Layout.Cells[0].Id)!;
+        var button = tile.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_TitlePicker");
+        Assert.False(button.IsVisible);
+
+        DashboardContentPicker.SetOpenOnTitleClick(host.Matrix, true);
+        host.Window.UpdateLayout();
+        Assert.True(button.IsVisible);
+        var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), host.Window)!.Value;
+        host.Window.MouseDown(point, MouseButton.Left);
+        host.Window.MouseUp(point, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        var flyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(button));
+        Assert.True(flyout.IsOpen);
+        flyout.Hide();
+        await Task.Yield();
+
+        DashboardContentPicker.SetOpenOnTitleClick(host.Matrix, false);
+        host.Window.UpdateLayout();
+        Assert.False(button.IsVisible);
+    }
+
+    [AvaloniaFact]
     public async Task SearchPickerOpensAfterContentMenuCloses()
     {
         using var host = new Host(1, 1);

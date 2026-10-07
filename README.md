@@ -417,9 +417,11 @@ The setting also works on a standalone `DashboardContentTile`. It inherits throu
 - **+ Add content** opens the searchable chooser directly below the clicked button.
 - **Change content** in a header menu opens it below the header action button after the menu closes.
 - Avalonia may reposition the popup to fit the screen. If no visible header action anchor exists, the tile is the fallback anchor.
-- Choose a result with **Select**, double-click, or Enter in the list. Closing the popup or detaching its anchor cancels.
+- A single click on a result immediately accepts it. Keyboard users can navigate the list and press Enter or use **Select**. Initial/current-item selection and search filtering never confirm automatically. Closing the popup or detaching its anchor cancels.
 
 The demo's **Searchable content picker** checkbox switches this content chooser; **Pick a cell** is the separate command-target interaction described below.
+
+To make content selection easier to discover, opt into clickable plain header titles with `DashboardContentPicker.SetOpenOnTitleClick(dashboard, true)`. The inherited setting defaults to false and works on matrices, tile grids, and body-content tiles. Clicking the title opens the configured chooser (or compact content menu), and keyboard users can focus the title button. Custom `HeaderContent`/`HeaderTemplate` keeps its own interaction. In tile grids the title button does not initiate dragging; drag the remaining header area instead. Pass false to restore the plain title.
 
 For a custom chooser, implement `IDashboardContentPicker` and attach it with the same property:
 

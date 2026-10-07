@@ -509,7 +509,7 @@ public class TileHostingTests
             Assert.Equal(resized.Columns, matrix.GetSnapshot().Columns);
 
             // Keyboard users still get a visible boundary and focus outline.
-            matrix.GetTile(matrix.Layout.Cells[0].Id)!.GetVisualDescendants().OfType<Button>().First().Focus();
+            matrix.GetTile(matrix.Layout.Cells[0].Id)!.GetVisualDescendants().OfType<Button>().First(b => b.Name == "PART_Actions").Focus();
             splitter.Focus(NavigationMethod.Tab);
 
             Assert.True(splitter.Opacity > 0);

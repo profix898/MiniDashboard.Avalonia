@@ -9,6 +9,8 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 
 namespace MiniDashboard.Avalonia.Content;
 
@@ -18,6 +20,16 @@ public sealed class DashboardContentPicker : AvaloniaObject, IDashboardContentPi
     /// <summary>Defines an inherited picker override. Null retains the compact menu picker.</summary>
     public static readonly AttachedProperty<IDashboardContentPicker?> PickerProperty =
         AvaloniaProperty.RegisterAttached<DashboardContentPicker, Control, IDashboardContentPicker?>("Picker", inherits: true);
+
+    /// <summary>Enables a clickable plain header title that opens content selection. Defaults to false; custom headers retain their own input.</summary>
+    public static readonly AttachedProperty<bool> OpenOnTitleClickProperty =
+        AvaloniaProperty.RegisterAttached<DashboardContentPicker, Control, bool>("OpenOnTitleClick", inherits: true);
+
+    /// <summary>Gets whether plain header titles open the content chooser.</summary>
+    public static bool GetOpenOnTitleClick(Control control) => control.GetValue(OpenOnTitleClickProperty);
+
+    /// <summary>Sets whether plain header titles open the content chooser on a dashboard or content tile.</summary>
+    public static void SetOpenOnTitleClick(Control control, bool enabled) => control.SetValue(OpenOnTitleClickProperty, enabled);
 
     /// <summary>Gets or sets whether matching definitions appear under category headings.</summary>
     public bool GroupByCategory { get; set; }
@@ -84,6 +96,16 @@ public sealed class DashboardContentPicker : AvaloniaObject, IDashboardContentPi
             if (list.SelectedItem is ListBoxItem { Tag: string id })
                 completion.TrySetResult(id);
         };
+
+        // Accept only an explicit item tap, not keyboard selection or initial/current-item restoration.
+        list.AddHandler(InputElement.TappedEvent, (_, e) =>
+        {
+            var item = (e.Source as Visual)?.GetVisualAncestors().OfType<ListBoxItem>().FirstOrDefault();
+            if (e.Source is ListBoxItem sourceItem)
+                item = sourceItem;
+            if (item is { IsEnabled: true, Tag: string id })
+                completion.TrySetResult(id);
+        }, RoutingStrategies.Bubble, true);
 
         list.KeyDown += (_, e) =>
         {

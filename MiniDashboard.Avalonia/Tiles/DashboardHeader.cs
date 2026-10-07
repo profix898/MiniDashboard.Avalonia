@@ -1,6 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using System.Linq;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
+using MiniDashboard.Avalonia.Content;
 
 namespace MiniDashboard.Avalonia.Tiles;
 
@@ -49,10 +53,36 @@ public sealed class DashboardHeader : ContentControl
     /// <summary>Gets the displayed custom header or title.</summary>
     public object? DisplayContent => _displayContent;
 
+    private Button? _titleButton;
+
+    /// <inheritdoc />
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        if (_titleButton != null)
+            _titleButton.Click -= OnTitleClick;
+
+        base.OnApplyTemplate(e);
+        _titleButton = e.NameScope.Find<Button>("PART_TitlePicker");
+        if (_titleButton != null)
+            _titleButton.Click += OnTitleClick;
+        UpdateTitlePicker();
+    }
+
+    private void OnTitleClick(object? sender, RoutedEventArgs e)
+    {
+        var tile = this.GetVisualAncestors().OfType<Tile>().FirstOrDefault();
+        if (sender is Control anchor && tile != null)
+            tile.GetValue(DashboardContentMenu.TitleActionProperty)?.Invoke(anchor);
+    }
+
+    private void UpdateTitlePicker() => PseudoClasses.Set(":title-picker", DashboardContentPicker.GetOpenOnTitleClick(this));
+
     /// <inheritdoc />
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == DashboardContentPicker.OpenOnTitleClickProperty)
+            UpdateTitlePicker();
         if (change.Property == TitleProperty || change.Property == ContentProperty)
             SetAndRaise(DisplayContentProperty, ref _displayContent, Content ?? Title);
 
