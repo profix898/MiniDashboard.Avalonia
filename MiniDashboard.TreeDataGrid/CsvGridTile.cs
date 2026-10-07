@@ -9,10 +9,14 @@ using Avalonia.Controls;
 
 namespace MiniDashboard.Avalonia.TreeDataGrid;
 
+/// <summary>
+/// A tree data grid tile that loads and displays rows from a CSV file.
+/// </summary>
 public class CsvGridTile : TreeDataGridTile
 {
     private int _loadVersion;
 
+    /// <summary>Defines the CSV file path loaded into the grid.</summary>
     public static readonly StyledProperty<string?> FilePathProperty =
         AvaloniaProperty.Register<CsvGridTile, string?>(nameof(FilePath));
 
@@ -21,6 +25,9 @@ public class CsvGridTile : TreeDataGridTile
         FilePathProperty.Changed.Subscribe(static e => _ = ((CsvGridTile) e.Sender).LoadCsvAsync());
     }
 
+    /// <summary>
+    /// Gets or sets the CSV file path loaded into the grid.
+    /// </summary>
     public string? FilePath
     {
         get { return GetValue(FilePathProperty); }

@@ -15,26 +15,31 @@ namespace MiniDashboard.Avalonia;
 /// </summary>
 public class Tile : ContentControl
 {
+    /// <summary>Defines the row span of this tile.</summary>
     public static readonly StyledProperty<int> GridHProperty =
         AvaloniaProperty.Register<Tile, int>(nameof(GridH), 1);
 
+    /// <summary>Defines the column span of this tile.</summary>
     public static readonly StyledProperty<int> GridWProperty =
         AvaloniaProperty.Register<Tile, int>(nameof(GridW), 1);
 
-    // Grid position & span
+    /// <summary>Defines the column position of this tile.</summary>
     public static readonly StyledProperty<int> GridXProperty =
         AvaloniaProperty.Register<Tile, int>(nameof(GridX));
 
+    /// <summary>Defines the row position of this tile.</summary>
     public static readonly StyledProperty<int> GridYProperty =
         AvaloniaProperty.Register<Tile, int>(nameof(GridY));
 
+    /// <summary>Defines custom header content replacing the title.</summary>
     public static readonly StyledProperty<object?> HeaderContentProperty =
         AvaloniaProperty.Register<Tile, object?>(nameof(HeaderContent));
 
+    /// <summary>Defines the template rendering custom header content.</summary>
     public static readonly StyledProperty<IDataTemplate?> HeaderTemplateProperty =
         AvaloniaProperty.Register<Tile, IDataTemplate?>(nameof(HeaderTemplate));
 
-    // Header controls (visible by default)
+    /// <summary>Defines whether the header area is visible.</summary>
     public static readonly StyledProperty<bool> IsHeaderVisibleProperty =
         AvaloniaProperty.Register<Tile, bool>(nameof(IsHeaderVisible), true);
 
@@ -44,24 +49,27 @@ public class Tile : ContentControl
     public static readonly StyledProperty<bool> IsPlacementValidProperty =
         AvaloniaProperty.Register<Tile, bool>(nameof(IsPlacementValid), true);
 
-    // Resize grip toggle
+    /// <summary>Defines whether the tile can be resized by the user.</summary>
     public static readonly StyledProperty<bool> IsResizableProperty =
         AvaloniaProperty.Register<Tile, bool>(nameof(IsResizable), true);
 
+    /// <summary>Defines the minimum row span of this tile.</summary>
     public static readonly StyledProperty<int> MinGridHProperty =
         AvaloniaProperty.Register<Tile, int>(nameof(MinGridH), 1);
 
-    // Size constraints in cells
+    /// <summary>Defines the minimum column span of this tile.</summary>
     public static readonly StyledProperty<int> MinGridWProperty =
         AvaloniaProperty.Register<Tile, int>(nameof(MinGridW), 1);
 
-    // Custom chrome (keep only custom properties; use base BorderBrush/Thickness/CornerRadius/Padding from TemplatedControl)
+    /// <summary>Defines the background brush of the tile chrome.</summary>
     public static readonly StyledProperty<IBrush?> TileBackgroundProperty =
         AvaloniaProperty.Register<Tile, IBrush?>(nameof(TileBackground));
 
+    /// <summary>Defines the foreground brush of the tile chrome.</summary>
     public static readonly StyledProperty<IBrush?> TileForegroundProperty =
         AvaloniaProperty.Register<Tile, IBrush?>(nameof(TileForeground));
 
+    /// <summary>Defines the default header title.</summary>
     public static readonly StyledProperty<string?> TileHeaderProperty =
         AvaloniaProperty.Register<Tile, string?>(nameof(TileHeader), "Tile");
 
@@ -97,20 +105,39 @@ public class Tile : ContentControl
     /// <summary>The combined host and tile action menu.</summary>
     public FlyoutBase? EffectiveHeaderActions => _matrixActions ?? HeaderActions;
 
+    /// <summary>The flyout opened by the empty-state add-content button.</summary>
+    public static readonly DirectProperty<Tile, FlyoutBase?> AddContentActionsProperty =
+        AvaloniaProperty.RegisterDirect<Tile, FlyoutBase?>(nameof(AddContentActions), t => t.AddContentActions);
+
+    /// <summary>Gets the flyout opened by the empty-state add-content button; falls back to the header actions.</summary>
+    public FlyoutBase? AddContentActions => _matrixAddActions ?? _addContentActions ?? EffectiveHeaderActions;
+
     private bool? _matrixHeaderVisible;
     private FlyoutBase? _matrixActions;
+    private FlyoutBase? _addContentActions;
+    private FlyoutBase? _matrixAddActions;
 
-    internal void SetMatrixHost(bool? headers, FlyoutBase? actions)
+    internal void SetMatrixHost(bool? headers, FlyoutBase? actions, FlyoutBase? addActions)
     {
         var resize = IsResizeGripVisible;
         var header = IsHeaderPresented;
         var menu = EffectiveHeaderActions;
+        var add = AddContentActions;
         _matrixHeaderVisible = headers;
         _matrixActions = actions;
+        _matrixAddActions = addActions;
         RaisePropertyChanged(IsResizeGripVisibleProperty, resize, IsResizeGripVisible);
         RaisePropertyChanged(IsHeaderPresentedProperty, header, IsHeaderPresented);
         RaisePropertyChanged(EffectiveHeaderActionsProperty, menu, EffectiveHeaderActions);
+        RaisePropertyChanged(AddContentActionsProperty, add, AddContentActions);
         UpdateOverlayActions();
+    }
+
+    internal void SetAddContentActions(FlyoutBase? flyout)
+    {
+        var previous = AddContentActions;
+        _addContentActions = flyout;
+        RaisePropertyChanged(AddContentActionsProperty, previous, AddContentActions);
     }
 
     private void UpdateOverlayActions() => PseudoClasses.Set(":overlay-actions", _matrixHeaderVisible is null && !IsHeaderPresented && EffectiveHeaderActions is not null);
@@ -254,6 +281,7 @@ public class Tile : ContentControl
         set { SetValue(TileHeaderProperty, value); }
     }
 
+    /// <inheritdoc />
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -262,12 +290,14 @@ public class Tile : ContentControl
         PushAllToDashboard();
     }
 
+    /// <inheritdoc />
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         _resizeBehavior?.Cancel();
         base.OnDetachedFromVisualTree(e);
     }
 
+    /// <inheritdoc />
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
@@ -296,7 +326,11 @@ public class Tile : ContentControl
             RaisePropertyChanged(IsHeaderPresentedProperty, _matrixHeaderVisible ?? change.GetOldValue<bool>(), IsHeaderPresented);
         
         if (change.Property == HeaderActionsProperty)
+        {
             RaisePropertyChanged(EffectiveHeaderActionsProperty, _matrixActions ?? change.GetOldValue<FlyoutBase?>(), EffectiveHeaderActions);
+            RaisePropertyChanged(AddContentActionsProperty,
+                                 _matrixAddActions ?? _addContentActions ?? _matrixActions ?? change.GetOldValue<FlyoutBase?>(), AddContentActions);
+        }
         
         if (change.Property == IsHeaderVisibleProperty || change.Property == HeaderActionsProperty)
             UpdateOverlayActions();

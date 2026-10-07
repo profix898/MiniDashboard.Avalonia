@@ -27,6 +27,17 @@ internal static class DashboardContentMenu
         return item;
     }
 
+    public static void FillPickerFlyout(MenuFlyout flyout, Control owner, IEnumerable<DashboardContentDefinition> catalog,
+                                        Func<string, bool> select)
+    {
+        flyout.Items.Clear();
+        foreach (var definition in catalog)
+            flyout.Items.Add(Action(owner, definition.Title, () => select(definition.Id)));
+        
+        if (flyout.Items.Count == 0)
+            flyout.Items.Add(new MenuItem { Header = Text(owner, "DashboardAddContent", "Add content"), IsEnabled = false });
+    }
+
     public static MenuItem Action(Control owner, string title, Func<bool> execute, bool enabled = true)
     {
         var item = new MenuItem { Header = title, IsEnabled = enabled };

@@ -7,6 +7,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DemoApp;
@@ -35,7 +36,7 @@ public class TileHostingTests
             Assert.Same(tile, matrix.GetTile(id));
             Assert.IsType<Grid>(tile.Parent);
             Assert.Single(matrix.GetVisualDescendants().OfType<Tile>());
-            Assert.Equal(new Thickness(10), tile.Padding);
+            Assert.Equal(new Thickness(6), tile.Padding);
             Assert.Equal(new Thickness(1), tile.BorderThickness);
             Assert.Equal(1, Grid.GetColumnSpan(tile));
             Assert.True(tile.IsResizable);
@@ -150,6 +151,47 @@ public class TileHostingTests
             Assert.Same(first, matrix.GetTile(b));
             Assert.Same(second, matrix.GetTile(a));
             Assert.Equal("b", matrix.Layout.GetCell(a).ContentId);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void MoveMenuListsOnlyAdjacentCells()
+    {
+        using var matrix = new DashboardMatrix
+        {
+            ContentDefinitions = new[] { new DashboardContentDefinition { Id = "notes", Title = "Notes", Factory = () => new TextBox() } }
+        };
+        matrix.InsertColumnAfter(0);
+        matrix.InsertColumnAfter(0);
+        matrix.InsertRowAfter(0);
+        matrix.InsertRowAfter(0);
+        var window = Show(matrix);
+        try
+        {
+            var center = matrix.Layout.Cells.Single(c => c.Row == 1 && c.Column == 1);
+            var centerMenu = Assert.IsType<MenuFlyout>(matrix.GetTile(center.Id)!.EffectiveHeaderActions);
+            var centerMove = centerMenu.Items.OfType<MenuItem>().Single(i => Equals(i.Header, "Move / swap tile"));
+
+            Assert.Equal(new[] { "Cell above", "Cell below", "Cell left", "Cell right" },
+                         centerMove.Items.OfType<MenuItem>().Select(i => i.Header));
+            Assert.False(centerMove.IsEnabled); // Empty source: nothing to move or swap yet.
+
+            matrix.SetContent(center.Id, "notes");
+
+            // Assigning body content wraps it in a new tile; re-read the live menu.
+            centerMenu = Assert.IsType<MenuFlyout>(matrix.GetTile(center.Id)!.EffectiveHeaderActions);
+            centerMove = centerMenu.Items.OfType<MenuItem>().Single(i => Equals(i.Header, "Move / swap tile"));
+            Assert.True(centerMove.IsEnabled);
+
+            var corner = matrix.Layout.Cells.Single(c => c.Row == 0 && c.Column == 0);
+            var cornerMenu = Assert.IsType<MenuFlyout>(matrix.GetTile(corner.Id)!.EffectiveHeaderActions);
+            var cornerMove = cornerMenu.Items.OfType<MenuItem>().Single(i => Equals(i.Header, "Move / swap tile"));
+
+            Assert.Equal(new[] { "Cell below", "Cell right" }, cornerMove.Items.OfType<MenuItem>().Select(i => i.Header));
         }
         finally
         {
@@ -316,21 +358,18 @@ public class TileHostingTests
             Assert.True(menu.IsOpen,
                         $"Button={button.Bounds}; point={point}; visible={button.IsVisible}; hit={window.InputHitTest(point)}; items={menu.Items.Count}; tileParent={tile.Parent}");
             
-            var picker = menu.Items.OfType<MenuItem>().First();
+            // The add button lists the catalog directly instead of the full cell menu.
+            var choices = menu.Items.OfType<MenuItem>().ToArray();
             
-            Assert.True(picker.IsAttachedToVisualTree(), "The populated menu item must be attached to the visible popup.");
-            Assert.Equal(3, picker.Items.Count);
+            Assert.Equal(new[] { "Editable notes", "System status", "Scrollable event log" }, choices.Select(c => c.Header));
             
-            picker.IsSubMenuOpen = true;
-            Dispatcher.UIThread.RunJobs();
-            
-            var choice = picker.Items.OfType<MenuItem>().First();
+            var choice = choices[0];
             
             Assert.True(choice.IsAttachedToVisualTree());
             
             choice.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             
-            Assert.NotNull(matrix.Layout.GetCell(empty.Id).ContentId);
+            Assert.Equal("notes", matrix.Layout.GetCell(empty.Id).ContentId);
             
             matrix.Dispose();
         }
@@ -473,6 +512,27 @@ public class TileHostingTests
             
             Assert.True(splitter.Opacity > 0);
             Assert.Equal(new Thickness(1), hit.BorderThickness);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void TileChromeMatchesTheSharedVisualMetrics()
+    {
+        var tile = new DashboardContentTile();
+        var window = Show(tile);
+        try
+        {
+            // Inner content padding equals the six-DIP gap between tiles in both hosts.
+            Assert.Equal(new Thickness(6), tile.Padding);
+
+            var title = tile.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "PART_Title");
+
+            Assert.Equal(FontWeight.Medium, title.FontWeight);
+            Assert.Equal(new Thickness(6, 4), title.Margin);
         }
         finally
         {

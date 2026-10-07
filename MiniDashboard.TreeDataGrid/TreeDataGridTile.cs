@@ -8,11 +8,11 @@ namespace MiniDashboard.Avalonia.TreeDataGrid;
 /// </summary>
 public class TreeDataGridTile : Tile
 {
-    // Styled property to control whether the user can resize columns.
+    /// <summary>Defines whether the user can resize grid columns.</summary>
     public static readonly StyledProperty<bool> CanUserResizeColumnsProperty =
         AvaloniaProperty.Register<TreeDataGridTile, bool>(nameof(CanUserResizeColumns), true);
 
-    // Styled property backing field for the tree data source.
+    /// <summary>Defines the data source displayed by the tree data grid.</summary>
     public static readonly StyledProperty<TreeDataGridSource?> SourceProperty =
         AvaloniaProperty.Register<TreeDataGridTile, TreeDataGridSource?>(nameof(Source));
 

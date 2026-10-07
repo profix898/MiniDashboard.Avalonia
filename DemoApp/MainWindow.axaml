@@ -182,7 +182,7 @@
         <TabItem Header="Matrix">
             <demoApp:MatrixDemo x:Name="MatrixExample" />
         </TabItem>
-        <TabItem Header="Same tiles, two layouts">
+        <TabItem Header="Shared catalog">
             <demoApp:CatalogDemo x:Name="CatalogExample" />
         </TabItem>
     </TabControl>

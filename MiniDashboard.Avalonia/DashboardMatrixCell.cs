@@ -11,6 +11,7 @@ internal sealed class DashboardMatrixCell
     private readonly DashboardMatrix _owner;
     private readonly Guid _id;
     private readonly MenuFlyout _menu = new MenuFlyout();
+    private readonly MenuFlyout _addMenu = new MenuFlyout();
 
     public Tile Tile { get; }
 
@@ -31,14 +32,16 @@ internal sealed class DashboardMatrixCell
     public void Update(bool headers)
     {
         Populate(_menu);
-        Tile.SetMatrixHost(headers, _menu);
+        DashboardContentMenu.FillPickerFlyout(_addMenu, Tile, _owner.GetCatalog(), id => _owner.SetContent(_id, id));
+        Tile.SetMatrixHost(headers, _menu, _addMenu);
     }
 
     public void Release()
     {
         Tile.PropertyChanged -= TilePropertyChanged;
         _menu.Hide();
-        Tile.SetMatrixHost(null, null);
+        _addMenu.Hide();
+        Tile.SetMatrixHost(null, null, null);
         if (Tile is DashboardContentTile { IsMatrixManaged: true, ContentId: null } empty)
             empty.ReleaseMatrixContent();
     }
@@ -95,19 +98,26 @@ internal sealed class DashboardMatrixCell
         menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardRemoveColumn", "Remove column"), () => _owner.RemoveColumn(Current().Column),
                               _owner.CanModifyStructure && _owner.Layout.Columns.Count > 1));
 
-        var move = new MenuItem
+        // Adjacent cells keep the move list compact in large matrices; every other destination
+        // remains reachable through repeated hops or the MoveContent/SwapContent APIs.
+        var move = new MenuItem { Header = DashboardContentMenu.Text(Tile, "DashboardMoveTile", "Move / swap tile") };
+        var directions = new (string Key, string Fallback, int Row, int Column)[]
         {
-            Header = DashboardContentMenu.Text(Tile, "DashboardMoveTile", "Move / swap tile"), IsEnabled = model.ContentId is not null && _owner.Layout.Cells.Count > 1
+            ("DashboardCellAbove", "Cell above", model.Row - 1, model.Column),
+            ("DashboardCellBelow", "Cell below", model.Row + 1, model.Column),
+            ("DashboardCellLeft", "Cell left", model.Row, model.Column - 1),
+            ("DashboardCellRight", "Cell right", model.Row, model.Column + 1)
         };
-        foreach (var target in _owner.Layout.Cells)
+        foreach (var (key, fallback, row, column) in directions)
         {
-            if (target.Id == _id)
+            var neighbor = _owner.Layout.Cells.FirstOrDefault(c => c.Row == row && c.Column == column);
+            if (neighbor is null)
                 continue;
-            
-            var title = $"Row {target.Row + 1}, column {target.Column + 1}";
-            move.Items.Add(Action(title, () => _owner.SwapContent(_id, target.Id)));
+
+            move.Items.Add(Action(DashboardContentMenu.Text(Tile, key, fallback), () => _owner.SwapContent(_id, neighbor.Id)));
         }
-        
+
+        move.IsEnabled = model.ContentId is not null && move.Items.Count > 0;
         menu.Items.Add(move);
     }
 

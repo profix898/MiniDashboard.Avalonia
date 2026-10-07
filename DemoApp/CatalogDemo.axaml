@@ -2,26 +2,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:dash="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
              x:Class="DemoApp.CatalogDemo">
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,*,Auto" Margin="8">
-        <StackPanel Spacing="4" Margin="6">
-            <TextBlock Text="One catalog, two layouts" FontSize="20" FontWeight="SemiBold" />
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="12">
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,10">
+            <TextBlock Text="One catalog, two hosts" FontSize="20" FontWeight="SemiBold" />
             <TextBlock TextWrapping="Wrap"
-                       Text="The same tile types work in both dashboards. Edit either notes tile: each has its own content. Add a catalog entry, then find it in both content menus." />
+                       Text="The same content definitions feed both dashboards below. Every view is an independent instance: edit one notes tile and the other stays unchanged. Use any '+ Add content' button to place a catalog entry; entries added while running appear in both hosts at once." />
         </StackPanel>
-        <TextBlock Grid.Row="1" Margin="6,4" FontWeight="SemiBold" TextWrapping="Wrap"
-                   Text="Classic — drag headers and resize tile corners" />
-        <dash:DashboardPanel Grid.Row="2" x:Name="Classic" Rows="2" Columns="4">
-            <dash:DashboardContentTile x:Name="SecondTile" GridX="2" GridW="2" GridH="2" DisposeRemovedContent="True" />
-        </dash:DashboardPanel>
-        <WrapPanel Grid.Row="3" Orientation="Horizontal" Margin="6">
-            <CheckBox x:Name="ShowHeaders" Margin="0,0,12,0" Content="Matrix headers" IsChecked="True" />
-            <Button Margin="0,0,12,0" Content="Add catalog entry" Click="AddEntry_Click" />
-        </WrapPanel>
-        <TextBlock Grid.Row="4" Margin="6,4" FontWeight="SemiBold" TextWrapping="Wrap"
-                   Text="Matrix — drag boundaries to resize; use header or boundary menus" />
-        <dash:DashboardMatrix Grid.Row="5" x:Name="Matrix" IsHeaderVisible="{Binding #ShowHeaders.IsChecked}"
-                              DisposeRemovedContent="True" />
-        <TextBlock Grid.Row="6" x:Name="Feedback" Margin="6" TextWrapping="Wrap"
-                   Text="Use a header menu to change content. Turn off Matrix headers, then hover or tap a boundary to reveal its menu: select Cell left/right or Cell above/below." />
+        <Grid Grid.Row="1" ColumnDefinitions="*,12,*">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                           Text="Classic — drag headers, resize from corners" />
+                <dash:DashboardPanel Grid.Row="1" x:Name="Classic" Rows="2" Columns="4" Margin="0,4,0,0" />
+            </Grid>
+            <Grid Grid.Column="2" RowDefinitions="Auto,*">
+                <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                           Text="Matrix — drag boundaries, header and boundary menus" />
+                <dash:DashboardMatrix Grid.Row="1" x:Name="Matrix" Margin="0,4,0,0"
+                                      IsHeaderVisible="{Binding #ShowHeaders.IsChecked}"
+                                      DisposeRemovedContent="True" />
+            </Grid>
+        </Grid>
+        <WrapPanel Grid.Row="2" x:Name="Library" Margin="0,10,0,0" />
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
+            <Button Content="Add catalog entry" Click="AddEntry_Click" />
+            <CheckBox x:Name="ShowHeaders" Content="Matrix headers" IsChecked="True" VerticalAlignment="Center" />
+            <TextBlock x:Name="Feedback" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
     </Grid>
 </UserControl>

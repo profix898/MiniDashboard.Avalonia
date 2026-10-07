@@ -274,10 +274,11 @@ public class BoundaryActionTests
             
             var menu = Assert.IsType<MenuFlyout>(button.Flyout);
             
-            var picker = menu.Items.OfType<MenuItem>().First();
+            var choice = Assert.Single(menu.Items.OfType<MenuItem>());
             
-            Assert.True(picker.IsAttachedToVisualTree());
-            Assert.Single(picker.Items.OfType<MenuItem>()).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            Assert.True(choice.IsAttachedToVisualTree());
+            Assert.Equal("Notes", choice.Header);
+            choice.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             Assert.Equal("notes", matrix.Layout.GetCell(id).ContentId);
             Assert.IsType<TextBox>(matrix.GetTile(id)!.Content);
         }

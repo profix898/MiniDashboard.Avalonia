@@ -11,12 +11,13 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock x:Name="PART_Title" Text="{TemplateBinding Title}"
                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
-                                   VerticalAlignment="Center" Margin="8,4"
+                                   FontWeight="Medium"
+                                   VerticalAlignment="Center" Margin="6,4"
                                    ToolTip.Tip="{TemplateBinding Title}" />
                         <ContentPresenter x:Name="PART_CustomHeader" IsVisible="False"
                                           Content="{TemplateBinding DisplayContent}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
-                                          VerticalAlignment="Center" Margin="8,4"
+                                          VerticalAlignment="Center" Margin="6,4"
                                           RecognizesAccessKey="False" />
                         <Button Grid.Column="1" x:Name="PART_Actions"
                                 Theme="{StaticResource DashboardActionButtonTheme}"

@@ -25,6 +25,7 @@ public class DashboardContentTile : Tile, IDisposable
         DashboardMatrix.DisposeRemovedContentProperty.AddOwner<DashboardContentTile>();
 
     private readonly MenuFlyout _menu = new MenuFlyout();
+    private readonly MenuFlyout _addMenu = new MenuFlyout();
     private DashboardContentCatalog _catalog = new DashboardContentCatalog();
     private DashboardContentInstance? _instance;
     private INotifyCollectionChanged? _subscription;
@@ -82,6 +83,7 @@ public class DashboardContentTile : Tile, IDisposable
     {
         PopulateMenu();
         HeaderActions = _menu;
+        SetAddContentActions(_addMenu);
         TileHeader = "Empty";
         PseudoClasses.Set(":empty", true);
     }
@@ -94,6 +96,7 @@ public class DashboardContentTile : Tile, IDisposable
         _menu.Items.Add(new Separator());
         _menu.Items.Add(DashboardContentMenu.Action(this, DashboardContentMenu.Text(this, "DashboardClearContent", "Clear content"),
                                                     () => SetContent(null), ContentId is not null));
+        DashboardContentMenu.FillPickerFlyout(_addMenu, this, _catalog.Where(d => d.TileFactory is null), id => SetContent(id));
     }
 
     /// <inheritdoc />

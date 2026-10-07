@@ -121,18 +121,27 @@ public class MatrixDemoTests
             window.UpdateLayout();
             
             var matrix = demo.GetVisualDescendants().OfType<DashboardMatrix>().Single();
+            var catalog = Assert.IsType<DashboardContentCatalog>(matrix.ContentDefinitions);
             var tiles = demo.GetVisualDescendants().OfType<DashboardContentTile>().Where(t => t.Parent is DashboardPanel).ToArray();
             
-            Assert.Single(tiles);
-            Assert.All(tiles, t => Assert.False(String.IsNullOrEmpty(t.TileHeader)));
-            
-            var catalog = Assert.IsType<DashboardContentCatalog>(matrix.ContentDefinitions);
+            Assert.Equal(3, tiles.Length);
             Assert.All(tiles, t => Assert.Same(catalog, t.ContentDefinitions));
+            Assert.All(tiles, t => Assert.False(String.IsNullOrEmpty(t.TileHeader)));
+            Assert.Equal(4, matrix.Layout.Cells.Count);
+            Assert.Equal(3, matrix.Layout.Cells.Count(c => c.ContentId is not null));
             
             demo.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add catalog entry"))
                 .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             
-            Assert.Equal(4, catalog.Count);
+            Assert.Equal(5, catalog.Count);
+            
+            // The new entry is instantly selectable in the add menus of both hosts.
+            var classicMenu = Assert.IsType<MenuFlyout>(tiles.Single(t => t.ContentId is null).AddContentActions);
+            Assert.Contains(classicMenu.Items.OfType<MenuItem>(), m => Equals(m.Header, "Added content 1"));
+            
+            var emptyCell = matrix.Layout.Cells.Single(c => c.ContentId is null);
+            var matrixMenu = Assert.IsType<MenuFlyout>(matrix.GetTile(emptyCell.Id)!.AddContentActions);
+            Assert.Contains(matrixMenu.Items.OfType<MenuItem>(), m => Equals(m.Header, "Added content 1"));
             
             using var frame = window.CaptureRenderedFrame();
             

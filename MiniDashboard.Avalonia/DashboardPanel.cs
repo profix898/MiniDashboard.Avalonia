@@ -463,6 +463,7 @@ public class DashboardPanel : Panel
         return child == _overlay;
     }
 
+    /// <inheritdoc />
     protected override Size MeasureOverride(Size availableSize)
     {
         var cell = GetCellSize(availableSize);
@@ -485,6 +486,7 @@ public class DashboardPanel : Panel
         return availableSize;
     }
 
+    /// <inheritdoc />
     protected override Size ArrangeOverride(Size finalSize)
     {
         var cell = GetCellSize(finalSize);
