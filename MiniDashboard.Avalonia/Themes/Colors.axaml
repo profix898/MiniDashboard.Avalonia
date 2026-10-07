@@ -6,6 +6,9 @@
             <SolidColorBrush x:Key="TileHeaderBackgroundBrush" Color="#FFF3F4F6" />
             <SolidColorBrush x:Key="TileForegroundBrush" Color="#FF111827" />
             <SolidColorBrush x:Key="TileBorderBrush" Color="#FFD1D5DB" />
+            <SolidColorBrush x:Key="DashboardTargetOverlayBrush" Color="#CCFFFFFF" />
+            <SolidColorBrush x:Key="DashboardTargetHoverOverlayBrush" Color="#A6FFFFFF" />
+            <SolidColorBrush x:Key="DashboardTargetHighlightBrush" Color="#FF8A94A3" />
 
             <SolidColorBrush x:Key="DashboardColumnFillABrush" Color="#0AAAAAAA" />
             <SolidColorBrush x:Key="DashboardColumnFillBBrush" Color="#04AAAAAA" />
@@ -17,6 +20,9 @@
             <SolidColorBrush x:Key="TileHeaderBackgroundBrush" Color="#FF16202C" />
             <SolidColorBrush x:Key="TileForegroundBrush" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="TileBorderBrush" Color="#FF24313C" />
+            <SolidColorBrush x:Key="DashboardTargetOverlayBrush" Color="#CC1F2937" />
+            <SolidColorBrush x:Key="DashboardTargetHoverOverlayBrush" Color="#A61F2937" />
+            <SolidColorBrush x:Key="DashboardTargetHighlightBrush" Color="#FF8793A3" />
             <!-- Preserve the original spelling for applications using that resource. -->
             <SolidColorBrush x:Key="TitleBorderBrush" Color="#FF24313C" />
 

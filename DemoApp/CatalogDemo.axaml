@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:dash="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+             xmlns:grid="clr-namespace:MiniDashboard.Avalonia.Grid;assembly=MiniDashboard.Avalonia"
+             xmlns:matrix="clr-namespace:MiniDashboard.Avalonia.Matrix;assembly=MiniDashboard.Avalonia"
              x:Class="DemoApp.CatalogDemo">
     <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="12">
         <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,10">
@@ -11,20 +12,22 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,12,*">
             <Grid RowDefinitions="Auto,*">
                 <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                           Text="Classic — drag headers, resize from corners" />
-                <dash:DashboardPanel Grid.Row="1" x:Name="Classic" Rows="2" Columns="4" Margin="0,4,0,0" />
+                           Text="Tile grid — drag headers, resize from corners" />
+                <grid:DashboardPanel Grid.Row="1" x:Name="TileGrid" Rows="2" Columns="4" Margin="0,4,0,0" />
             </Grid>
             <Grid Grid.Column="2" RowDefinitions="Auto,*">
                 <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                            Text="Matrix — drag boundaries, header and boundary menus" />
-                <dash:DashboardMatrix Grid.Row="1" x:Name="Matrix" Margin="0,4,0,0"
-                                      IsHeaderVisible="{Binding #ShowHeaders.IsChecked}"
-                                      DisposeRemovedContent="True" />
+                <matrix:DashboardMatrix Grid.Row="1" x:Name="Matrix" Margin="0,4,0,0"
+                                        IsHeaderVisible="{Binding #ShowHeaders.IsChecked}"
+                                        DisposeRemovedContent="True" />
             </Grid>
         </Grid>
         <WrapPanel Grid.Row="2" x:Name="Library" Margin="0,10,0,0" />
         <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
             <Button Content="Add catalog entry" Click="AddEntry_Click" />
+            <Button Content="Pick grid tile" Click="PickTileGrid_Click" />
+            <Button Content="Pick matrix cell" Click="PickMatrix_Click" />
             <CheckBox x:Name="ShowHeaders" Content="Matrix headers" IsChecked="True" VerticalAlignment="Center" />
             <TextBlock x:Name="Feedback" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
         </StackPanel>

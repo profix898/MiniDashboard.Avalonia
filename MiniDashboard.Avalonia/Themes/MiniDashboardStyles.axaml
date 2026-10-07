@@ -1,7 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:MiniDashboard.Avalonia.Converters"
-        xmlns:controls="clr-namespace:MiniDashboard.Avalonia"
+        xmlns:grid="clr-namespace:MiniDashboard.Avalonia.Grid"
+        xmlns:tiles="clr-namespace:MiniDashboard.Avalonia.Tiles"
         x:Class="MiniDashboard.Avalonia.Themes.MiniDashboardStyles">
 
     <Styles.Resources>
@@ -20,11 +21,41 @@
 
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter" />
             <converters:TopCornersOnlyCornerRadiusConverter x:Key="TopCornersOnlyConverter" />
+
+            <!-- Keep target shading constant instead of inheriting the host theme's button hover fill. -->
+            <ControlTheme x:Key="DashboardTargetPickerButtonTheme" TargetType="Button">
+                <Setter Property="Background" Value="{DynamicResource DashboardTargetOverlayBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TileForegroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource TileBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter>
+                <Style Selector="^.pick-eligible:pointerover">
+                    <Setter Property="Background" Value="{DynamicResource DashboardTargetHoverOverlayBrush}" />
+                    <Setter Property="FontWeight" Value="Bold" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource DashboardTargetHighlightBrush}" />
+                </Style>
+                <Style Selector="^.pick-eligible:focus-visible">
+                    <Setter Property="FontWeight" Value="Bold" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource DashboardTargetHighlightBrush}" />
+                </Style>
+            </ControlTheme>
         </ResourceDictionary>
     </Styles.Resources>
 
     <!-- Global DashboardPanel styling using themed brushes -->
-    <Style Selector=":is(controls|DashboardPanel)">
+    <Style Selector=":is(grid|DashboardPanel)">
         <Setter Property="ColumnFillA" Value="{DynamicResource DashboardColumnFillABrush}" />
         <Setter Property="ColumnFillB" Value="{DynamicResource DashboardColumnFillBBrush}" />
         <Setter Property="RowFill" Value="{DynamicResource DashboardRowFillBrush}" />
@@ -36,32 +67,32 @@
     </Style>
 
     <!-- Tiles bind Tile properties to global DashboardPanel properties -->
-    <Style Selector=":is(controls|DashboardPanel) > :is(controls|Tile)">
+    <Style Selector=":is(grid|DashboardPanel) > :is(tiles|Tile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=controls:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector=":is(controls|DashboardPanel) > :is(controls|Tile) /template/ controls|DashboardHeader">
+    <Style Selector=":is(grid|DashboardPanel) > :is(tiles|Tile) /template/ tiles|DashboardHeader">
         <Setter Property="Cursor" Value="SizeAll" />
     </Style>
-    <Style Selector=":is(controls|Tile):overlay-actions /template/ Button#PART_OverlayActions">
+    <Style Selector=":is(tiles|Tile):overlay-actions /template/ Button#PART_OverlayActions">
         <Setter Property="IsVisible" Value="True" />
     </Style>
-    <Style Selector=":is(controls|Tile):pointerover /template/ Button#PART_OverlayActions">
+    <Style Selector=":is(tiles|Tile):pointerover /template/ Button#PART_OverlayActions">
         <Setter Property="Opacity" Value="1" />
     </Style>
-    <Style Selector=":is(controls|Tile):focus-within /template/ Button#PART_OverlayActions">
+    <Style Selector=":is(tiles|Tile):focus-within /template/ Button#PART_OverlayActions">
         <Setter Property="Opacity" Value="1" />
     </Style>
-    <Style Selector=":is(controls|Tile):empty /template/ Button#PART_Add">
+    <Style Selector=":is(tiles|Tile):empty /template/ Button#PART_Add">
         <Setter Property="IsVisible" Value="True" />
     </Style>
     <!-- Resize grip is subtle at rest and reveals on hover to guide the eye to the active corner.
          Uses :is() so it applies to every tile type (TextTile, ImageTile, PlotTile, TreeDataGridTile, ...) across all assemblies. -->
-    <Style Selector=":is(controls|Tile) /template/ Thumb#PART_ResizeThumb">
+    <Style Selector=":is(tiles|Tile) /template/ Thumb#PART_ResizeThumb">
         <Setter Property="Opacity" Value="0.45" />
         <Setter Property="Transitions">
             <Transitions>
@@ -69,7 +100,7 @@
             </Transitions>
         </Setter>
     </Style>
-    <Style Selector=":is(controls|Tile):pointerover /template/ Thumb#PART_ResizeThumb">
+    <Style Selector=":is(tiles|Tile):pointerover /template/ Thumb#PART_ResizeThumb">
         <Setter Property="Opacity" Value="1" />
     </Style>
 

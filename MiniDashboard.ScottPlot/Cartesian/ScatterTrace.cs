@@ -24,7 +24,7 @@ public sealed class ScatterTrace
         Y = y is double[] ya ? ya : y.ToArray();
         if (X.Length != Y.Length)
             throw new ArgumentException("X and Y length mismatch");
-        
+
         Label = label;
     }
 
@@ -35,7 +35,7 @@ public sealed class ScatterTrace
     {
         if (x.Length != y.Length)
             throw new ArgumentException("X and Y length mismatch");
-        
+
         X = x;
         Y = y;
         Label = label;

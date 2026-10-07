@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using MiniDashboard.Avalonia.Tiles;
 
 namespace MiniDashboard.Avalonia.TreeDataGridOS;
 

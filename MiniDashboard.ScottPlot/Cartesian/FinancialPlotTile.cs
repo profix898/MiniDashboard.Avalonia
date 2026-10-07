@@ -36,7 +36,7 @@ public class FinancialPlotTile : CartesianPlotTile
         {
             DataBuilder = null; // Nothing to display
             ComposePlotBuilder();
-            
+
             return;
         }
 

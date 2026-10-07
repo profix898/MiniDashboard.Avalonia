@@ -1,10 +1,10 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:MiniDashboard.Avalonia.Converters;assembly=MiniDashboard.Avalonia"
-        xmlns:dashboard="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
         xmlns:cartesian="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Cartesian"
         xmlns:pie="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Pie"
         xmlns:controls="clr-namespace:MiniDashboard.Avalonia.ScottPlot"
+        xmlns:grid="clr-namespace:MiniDashboard.Avalonia.Grid;assembly=MiniDashboard.Avalonia"
         x:Class="MiniDashboard.Avalonia.ScottPlot.Themes.ScottPlotStyles">
 
     <Styles.Resources>
@@ -35,77 +35,77 @@
     </Styles.Resources>
 
     <!-- Tiles bind Tile properties to global DashboardPanel properties -->
-    <Style Selector="dashboard|DashboardPanel > :is(cartesian|BarsPlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(cartesian|BarsPlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(cartesian|CartesianPlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(cartesian|CartesianPlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(cartesian|FinancialPlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(cartesian|FinancialPlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(cartesian|HistogramPlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(cartesian|HistogramPlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(pie|PieChartPlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(pie|PieChartPlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(pie|PiePlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(pie|PiePlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(controls|PlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(controls|PlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(cartesian|ScatterPlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(cartesian|ScatterPlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > :is(cartesian|SignalPlotTile)">
+    <Style Selector="grid|DashboardPanel > :is(cartesian|SignalPlotTile)">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
 
 </Styles>

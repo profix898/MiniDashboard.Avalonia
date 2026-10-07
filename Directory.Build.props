@@ -11,7 +11,7 @@
     <PropertyGroup>
         <!-- Default / Minimal Version -->
         <AssemblyVersion>2.0.0</AssemblyVersion>
-        <MinVerMinimumMajorMinor>2.0</MinVerMinimumMajorMinor>
+        <MinVerMinimumMajorMinor>2.3</MinVerMinimumMajorMinor>
         <MinVerDefaultPreReleaseIdentifiers>dev</MinVerDefaultPreReleaseIdentifiers>
         <MinVerBuildMetadata Condition=" '$(Configuration)' == 'Debug' ">$(GitSHA)</MinVerBuildMetadata>
         <MinVerVerbosity>normal</MinVerVerbosity>
@@ -19,6 +19,8 @@
     </PropertyGroup>
     <Target Name="Versioning" AfterTargets="MinVer">
         <PropertyGroup>
+            <MinVerPatch Condition="'$(MinVerMajor)' == '2' and $(MinVerMinor) &lt; 3">0</MinVerPatch>
+            <MinVerMinor Condition="'$(MinVerMajor)' == '2' and $(MinVerMinor) &lt; 3">3</MinVerMinor>
             <BuildNumber>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::Parse("2026/07/01"))).TotalDays.ToString("0"))</BuildNumber>
             <Version>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(BuildNumber)-dev+$(GitSHA)</Version>
             <Version Condition=" '$(Configuration)' == 'Release' ">$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).$(BuildNumber)</Version>

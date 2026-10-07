@@ -2,7 +2,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia.Data;
 using DemoApp.Models;
-using MiniDashboard.Avalonia;
+using MiniDashboard.Avalonia.Tiles;
 
 namespace DemoApp;
 

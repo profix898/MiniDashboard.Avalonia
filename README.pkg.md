@@ -1,23 +1,24 @@
 # MiniDashboard.Avalonia
 
-Dashboard controls for Avalonia 12 applications. Choose free tile placement in a fixed grid with `DashboardPanel` (or the MVVM-friendly `DashboardItemsPanel`), or a dynamically editable matrix with `DashboardMatrix` — one content slot per cell, with insertable/removable rows and columns and proportional splitters. Both hosts share the same tile controls, content catalogs, and header styling.
+Dashboard controls for Avalonia 12 / .NET 10 applications. Choose free tile placement in a fixed
+grid with `DashboardPanel` (or the MVVM-friendly `DashboardItemsPanel`), or a dynamically editable
+matrix with `DashboardMatrix`: one tile per cell, with insertable/removable rows and columns and
+proportional splitters. Both layouts share tiles, catalogs, content pickers, and target selection.
 
 ## Packages
 
-- `MiniDashboard.Avalonia` — dashboard hosts, content catalogs, and tile controls.
-- `MiniDashboard.Avalonia.ScottPlot` — optional chart tiles (`ScatterPlotTile`, `SignalPlotTile`, `BarsPlotTile`, `PiePlotTile`, and more).
-- `MiniDashboard.Avalonia.TreeDataGrid` — optional `TreeDataGridTile` and `CsvGridTile`; the underlying TreeDataGrid package may require an Avalonia UI license in consuming applications.
-- `MiniDashboard.Avalonia.TreeDataGridOS` — the same tiles backed by the MIT-licensed community fork. It is an alternative to the commercial package; do not reference both together.
+- `MiniDashboard.Avalonia`: dashboard hosts, content catalogs, pickers, and tile controls.
+- `MiniDashboard.Avalonia.ScottPlot`: optional scatter, signal, histogram, bar, financial, and pie chart tiles.
+- `MiniDashboard.Avalonia.TreeDataGrid`: optional TreeDataGrid/CSV tiles; the underlying Avalonia package may require an Avalonia UI license.
+- `MiniDashboard.Avalonia.TreeDataGridOS`: the corresponding tiles using the MIT-licensed community fork; do not reference both grid packages.
 
 ## Quick start
 
-Install the core package:
-
-```bash
+```powershell
 dotnet add package MiniDashboard.Avalonia
 ```
 
-Register the styles in `App.axaml`:
+Register the core styles after your application theme in `App.axaml`:
 
 ```xml
 <Application xmlns="https://github.com/avaloniaui"
@@ -29,68 +30,103 @@ Register the styles in `App.axaml`:
 </Application>
 ```
 
-Optional extension packages install the same way and add their own style includes (for example `ScottPlotStyles` or `TreeDataGridStyles`).
+Optional packages add their own style collections: `ScottPlotStyles` in `.ScottPlot.Themes`,
+or `TreeDataGridStyles` in `.TreeDataGrid.Themes` / `.TreeDataGridOS.Themes`.
+
+**Namespaces:** `.Grid` contains tile-grid hosts and placement APIs; `.Matrix` contains the matrix
+host/layout/events; `.Tiles` contains shared tile controls; `.Content` contains catalogs/factories/
+content pickers; `.Picking` contains the target-picker contract. These are under `MiniDashboard.Avalonia`.
+When upgrading from the root-namespace API, update both C# imports and XAML declarations.
 
 ## Basic usage
 
 ```xml
-<dash:DashboardPanel xmlns:dash="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+<grid:DashboardPanel xmlns="https://github.com/avaloniaui"
+                     xmlns:grid="clr-namespace:MiniDashboard.Avalonia.Grid;assembly=MiniDashboard.Avalonia"
+                     xmlns:tiles="clr-namespace:MiniDashboard.Avalonia.Tiles;assembly=MiniDashboard.Avalonia"
                      Rows="6" Columns="8">
-  <dash:TextTile GridX="0" GridY="0" GridW="2" GridH="2" TileHeader="Notes" Text="Drag me" />
-  <dash:Tile GridX="2" GridY="0" GridW="3" GridH="2" TileHeader="Status">
-    <StackPanel>
-      <TextBlock Text="CPU" />
-      <ProgressBar Minimum="0" Maximum="100" Value="57" />
-    </StackPanel>
-  </dash:Tile>
-</dash:DashboardPanel>
+    <tiles:TextTile GridX="0" GridY="0" GridW="2" GridH="2" TileHeader="Notes" Text="Drag me" />
+    <tiles:Tile GridX="2" GridY="0" GridW="3" GridH="2" TileHeader="Status">
+        <TextBlock Text="Healthy" />
+    </tiles:Tile>
+</grid:DashboardPanel>
 ```
 
-Tiles place themselves with `GridX`, `GridY`, `GridW`, and `GridH`. Drag a tile by its header; resize it from the bottom-right grip when `IsResizable` is `true`. Overlapping moves resolve to a nearby free position, and colliding resizes shrink to fit. Grid properties support two-way binding, so layouts can be saved and restored from view models.
+Drag headers and resize from the bottom-right grip. `GridX/Y` locate a tile; `GridW/H` define
+spans. Collision handling finds nearby/free positions or adjusts resizing. Bind coordinates to
+persist your layout; `PlacementChanging` can veto edits and `PlacementChanged` reports accepted edits.
 
-For view-model-driven dashboards, use `DashboardItemsPanel` with `ItemsSource` and `DataTemplates`; generated tiles keep full drag and resize behavior and bind common layout properties (`Title`, `X`, `Y`, `Width`, `Height`) by convention.
+For view-model-driven dashboards, use `DashboardItemsPanel.ItemsSource` with `ItemTemplate` or
+`DataTemplates`. Generated tiles bind `Title`, `X`, `Y`, `Width`, and `Height` by convention.
+Opt into `DisposeRemovedTiles` for owned template-created controls; direct control items are borrowed.
 
 ## Matrix dashboards
 
-`DashboardMatrix` hosts one content slot per cell. Rows and columns can be inserted, removed, and resized at runtime with native splitters; every structural change is cancellable and produces an immutable layout snapshot for persistence.
-
 ```xml
-<dash:DashboardMatrix xmlns:dash="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
-                      MinCellWidth="96" MinCellHeight="72" />
+<matrix:DashboardMatrix xmlns="https://github.com/avaloniaui"
+                        xmlns:matrix="clr-namespace:MiniDashboard.Avalonia.Matrix;assembly=MiniDashboard.Avalonia"
+                        MinCellWidth="96" MinCellHeight="72" DisposeRemovedContent="True" />
 ```
 
 ```csharp
-Matrix.ContentDefinitions = new DashboardContentDefinition[]
+using Avalonia.Controls;
+using MiniDashboard.Avalonia.Content;
+
+Matrix.ContentDefinitions = new DashboardContentCatalog
 {
-    new() { Id = "notes", Title = "Notes", Factory = () => new TextBox { AcceptsReturn = true } }
+    new DashboardContentDefinition
+    {
+        Id = "notes", Title = "Notes", Category = "General",
+        Factory = () => new TextBox { AcceptsReturn = true }
+    }
 };
 Matrix.SetContent(Matrix.Layout.Cells[0].Id, "notes");
-Matrix.InsertColumnAfter(0); // splits column zero's weight in half
-Matrix.InsertRowAfter(0);    // inserts across every column
+Matrix.InsertColumnAfter(0); // Insert a whole column; preserve existing content.
+Matrix.InsertRowAfter(0);
 ```
 
-Definition IDs are stable persistence keys. Handle `LayoutChanging` to veto changes (for example, confirm before removing occupied cells) and `LayoutChanged` to save the resulting snapshot.
+Matrices start at 1×1. Resize shared boundaries with pointer or keyboard; cells do not span or
+resize independently. Headerless mode provides boundary menus. `LayoutChanging`/`ContentChanging`
+can veto transactions. Save `GetSnapshot()` as JSON and apply it with `RestoreLayout`; snapshots
+contain geometry/assignments, not controls or application content state. Move/swap preserves instances.
 
 ## Shared content
 
-`DashboardContentCatalog` supplies fresh-control factories keyed by stable IDs. The same catalog works in both dashboards: assign it to `DashboardMatrix.ContentDefinitions`, or place `DashboardContentTile` instances in a classic dashboard. `FromItems`, `FromTemplate`, and `FromTiles` adapt existing model lists, data templates, and tile recipes. Both hosts offer cancellable content changes and opt-in disposal of generated controls.
+`DashboardContentCatalog` supplies fresh-control recipes with stable, case-sensitive IDs. Use it
+in a matrix or tile-grid `DashboardContentTile`. Define exactly one `Factory` / `ContextFactory`
+for a body, or `TileFactory` / `ContextTileFactory` for a complete tile. `FromItems`, `FromTemplate`,
+`FromTiles`, and `CreateTile` adapt existing models. Contextual factories receive instance/cell IDs
+and optional state from `ContentStateProvider`. Save that application state separately.
+
+Reuse unchanged definitions to retain views; call `RefreshContent()` for metadata/plain-catalog edits.
+Visual detachment preserves content. Permanently retire generated-content hosts with `Dispose()`;
+opt into `DisposeRemovedContent` to dispose owned discarded factory content.
+
+## Pickers and selectors
+
+**Content selection chooses what to create.** The default is a compact menu. Attach a grouped
+searchable chooser with `DashboardContentPicker.SetPicker(dashboard, new DashboardContentPicker
+{ GroupByCategory = true })` from `.Content`. **+ Add content** opens it directly below the button;
+search matches title/category/description. Implement `IDashboardContentPicker` for your own UI:
+return a definition ID or null; the host handles assignment and factory lifecycle.
+
+**Target selection chooses an existing tile for a command.** Both layout families implement
+`.Picking.IDashboardTilePicker`: call `PickTileAsync(predicate, cancellationToken)`, or matrix
+`PickCellAsync` for cell identity. Overlays intercept hosted input; clicks/Enter select, arrows/Tab
+move focus, and Escape cancels. `CancelTilePick` / `CancelCellPick` support Cancel buttons.
+Cancellation or relevant layout/content changes return null. The application supplies instructions
+and executes its command; no persistent active tile is introduced.
 
 ## Extensions
 
-After registering the extension styles, use chart and grid tiles like any other tile:
+After registering extension styles, chart and grid tiles work like other complete tiles. Chart
+controls use `.ScottPlot.Cartesian` / `.ScottPlot.Pie`; grid controls use `.TreeDataGrid` or
+**`.TreeDataGridOS`**, with matching assembly names. `CsvGridTile` has a minimal parser without
+quoting/escaping support. Core `TableViewTile` provides read-only native Avalonia tables.
 
-```xml
-<cartesian:ScatterPlotTile xmlns:cartesian="clr-namespace:MiniDashboard.Avalonia.ScottPlot.Cartesian;assembly=MiniDashboard.Avalonia.ScottPlot"
-                           GridX="0" GridY="0" GridW="5" GridH="3"
-                           TileHeader="Scatter" Ys="{Binding SimpleSeries}" />
-```
+Custom tiles derive from `.Tiles.Tile`. Templates should honor `IsHeaderPresented`,
+`IsResizeGripVisible`, `EffectiveHeaderActions`, and `AddContentActions`; keep `PART_Add` for direct
+custom-picker opening. Theme resources control spacing, headers, target overlays, and light/dark colors.
 
-```xml
-<data:TreeDataGridTile xmlns:data="clr-namespace:MiniDashboard.Avalonia.TreeDataGrid;assembly=MiniDashboard.Avalonia.TreeDataGrid"
-                       GridX="2" GridY="0" GridW="5" GridH="4"
-                       TileHeader="People" Source="{Binding PeopleGridSource}" />
-```
-
-The core package also includes `TextTile`, `ImageTile`, and the read-only `TableViewTile`. Custom tiles derive from `Tile` and register styled properties as usual.
-
-See the GitHub README for the full documentation: layout rules, persistence and snapshots, header customization, theming resources, and extension package notes.
+See the [full user guide](https://github.com/profix898/MiniDashboard.Avalonia#readme) for detailed
+examples, custom pickers, persistence, ownership, theming, and extension setup.

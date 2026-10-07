@@ -74,14 +74,14 @@ public class HistogramPlotTile : CartesianPlotTile
         {
             DataBuilder = null; // Nothing to plot
             ComposePlotBuilder();
-            
+
             return;
         }
 
         DataBuilder = avaPlot =>
         {
             avaPlot.Plot.Clear();
-            
+
             var hist = Histogram.WithBinCount(BinCount, data);
 
             // Use Bars so individual bar sizes can be adjusted (ScottPlot 5 doesn't expose bar width directly on Histogram)

@@ -2,32 +2,256 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using MiniDashboard.Avalonia.Content;
+using MiniDashboard.Avalonia.Matrix;
+using MiniDashboard.Avalonia.Tiles;
 using Xunit;
+using AvaloniaGrid = Avalonia.Controls.Grid;
 
 namespace MiniDashboard.Avalonia.Tests;
 
 public class MatrixControlTests
 {
     [AvaloniaFact]
+    public async Task SearchPickerOpensAfterContentMenuCloses()
+    {
+        using var host = new Host(1, 1);
+        host.Matrix.ContentDefinitions = new[] { Definition("a", () => new TextBox()) };
+        DashboardContentPicker.SetPicker(host.Matrix, new DashboardContentPicker());
+        host.Matrix.RefreshContent();
+        var tile = host.Matrix.GetTile(host.Matrix.Layout.Cells[0].Id)!;
+        var menu = Assert.IsType<MenuFlyout>(tile.AddContentActions);
+        menu.ShowAt(tile);
+        Dispatcher.UIThread.RunJobs();
+        var item = Assert.Single(menu.Items.OfType<MenuItem>());
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        menu.Hide();
+        Dispatcher.UIThread.RunJobs();
+        var anchor = tile.GetVisualDescendants().OfType<Button>().First(button => button.IsVisible && button.Name == "PART_Actions");
+        var picker = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(anchor));
+        Assert.Equal(PlacementMode.Bottom, picker.Placement);
+        Assert.True(picker.IsOpen);
+        var panel = Assert.IsType<StackPanel>(picker.Content);
+        var list = panel.Children.OfType<ListBox>().Single();
+        list.SelectedItem = Assert.Single(list.Items.OfType<ListBoxItem>());
+        panel.Children.OfType<Button>().Single().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Task.Yield();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("a", host.Matrix.Layout.Cells[0].ContentId);
+    }
+
+    [AvaloniaFact]
+    public async Task EmptyCellAddButtonOpensSearchPickerDirectly()
+    {
+        using var host = new Host(1, 1);
+        host.Matrix.ContentDefinitions = new[] { Definition("a", () => new TextBox()) };
+        DashboardContentPicker.SetPicker(host.Matrix, new DashboardContentPicker());
+        host.Matrix.RefreshContent();
+        var tile = host.Matrix.GetTile(host.Matrix.Layout.Cells[0].Id)!;
+        host.Window.UpdateLayout();
+        var add = tile.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "PART_Add");
+        Assert.Null(add.Flyout);
+        add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        var picker = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(add));
+        Assert.Equal(PlacementMode.Bottom, picker.Placement);
+        Assert.True(picker.IsOpen);
+        Assert.False(Assert.IsType<MenuFlyout>(tile.AddContentActions).IsOpen);
+        picker.Hide();
+        await Task.Yield();
+        DashboardContentPicker.SetPicker(host.Matrix, null);
+        host.Matrix.RefreshContent();
+        Assert.IsType<MenuFlyout>(add.Flyout);
+    }
+
+    [AvaloniaFact]
+    public void MetadataRefreshUpdatesTitlesWithoutRecreatingContent()
+    {
+        using var host = new Host(1, 1);
+        var calls = 0;
+        var definition = Definition("a", () =>
+        {
+            calls++;
+            return new TextBox();
+        });
+        host.Matrix.ContentDefinitions = new[] { definition };
+        var id = host.Matrix.Layout.Cells[0].Id;
+        host.Matrix.SetContent(id, "a");
+        var original = host.Matrix.GetContent(id);
+        definition.Title = "Updated title";
+        definition.Category = "New category";
+        host.Matrix.RefreshContent();
+        Assert.Same(original, host.Matrix.GetContent(id));
+        Assert.Equal(1, calls);
+        Assert.Equal("Updated title", host.Matrix.GetTile(id)!.TileHeader);
+    }
+
+    [AvaloniaFact]
+    public async Task SearchPickerFiltersMetadataAndReturnsAnExplicitSelection()
+    {
+        using var host = new Host(1, 1);
+        var definitions = new[]
+        {
+            new DashboardContentDefinition { Id = "a", Title = "First", Category = "Signals", Factory = () => new TextBox() },
+            new DashboardContentDefinition { Id = "b", Title = "Second", Category = "Volumes", Factory = () => new TextBox() }
+        };
+        var task = new DashboardContentPicker().PickAsync(host.Matrix, definitions, null);
+        Dispatcher.UIThread.RunJobs();
+        var flyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(host.Matrix));
+        var panel = Assert.IsType<StackPanel>(flyout.Content);
+        var search = panel.Children.OfType<TextBox>().Single();
+        search.Text = "Volumes";
+        Dispatcher.UIThread.RunJobs();
+        var list = panel.Children.OfType<ListBox>().Single();
+        var choice = Assert.Single(list.Items.OfType<ListBoxItem>());
+        Assert.Equal("b", choice.Tag);
+        list.SelectedItem = choice;
+        panel.Children.OfType<Button>().Single().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal("b", await task);
+    }
+
+    [AvaloniaFact]
+    public async Task GroupedPickerShowsNonselectableHeadingsAndSearchPreservesCurrentChoice()
+    {
+        using var host = new Host(1, 1);
+        var definitions = new[]
+        {
+            new DashboardContentDefinition { Id = "a", Title = "First", Category = "Signals", Factory = () => new TextBox() },
+            new DashboardContentDefinition { Id = "b", Title = "Second", Category = "Volumes", Factory = () => new TextBox() }
+        };
+        var task = new DashboardContentPicker { GroupByCategory = true }.PickAsync(host.Matrix, definitions, "b");
+        Dispatcher.UIThread.RunJobs();
+        var flyout = Assert.IsType<Flyout>(FlyoutBase.GetAttachedFlyout(host.Matrix));
+        var panel = Assert.IsType<StackPanel>(flyout.Content);
+        var list = panel.Children.OfType<ListBox>().Single();
+        Assert.Equal(4, list.Items.Count);
+        Assert.All(list.Items.OfType<ListBoxItem>().Where(item => item.Tag == null), heading =>
+        {
+            Assert.False(heading.IsEnabled);
+            Assert.False(heading.Focusable);
+        });
+        Assert.Equal("b", Assert.IsType<ListBoxItem>(list.SelectedItem).Tag);
+        panel.Children.OfType<TextBox>().Single().Text = "Volumes";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, list.Items.Count);
+        Assert.Equal("Volumes", Assert.IsType<TextBlock>(list.Items.OfType<ListBoxItem>().First().Content).Text);
+        panel.Children.OfType<Button>().Single().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal("b", await task);
+    }
+
+    [AvaloniaFact]
+    public void ContextFactoriesReceiveIndependentRestorationStateAndRetainInstancesOnSwap()
+    {
+        using var host = new Host(1, 2);
+        var contexts = new List<DashboardContentCreationContext>();
+        host.Matrix.ContentDefinitions = new[]
+        {
+            new DashboardContentDefinition
+            {
+                Id = "same", Title = "Same view", ContextFactory = context =>
+                {
+                    contexts.Add(context);
+                    return new TextBox { Text = (string?) context.State };
+                }
+            }
+        };
+        var first = host.Matrix.Layout.Cells[0].Id;
+        var second = host.Matrix.Layout.Cells[1].Id;
+        host.Matrix.ContentStateProvider = cell => cell.Id == first ? "first state" : "second state";
+        host.Matrix.SetContent(first, "same");
+        host.Matrix.SetContent(second, "same");
+        var firstControl = host.Matrix.GetContent(first);
+        Assert.Equal("first state", Assert.IsType<TextBox>(firstControl).Text);
+        Assert.Equal("second state", Assert.IsType<TextBox>(host.Matrix.GetContent(second)).Text);
+        Assert.NotEqual(contexts[0].InstanceId, contexts[1].InstanceId);
+        Assert.Equal(first, contexts[0].CellId);
+        host.Matrix.SwapContent(first, second);
+        Assert.Same(firstControl, host.Matrix.GetContent(second));
+        Assert.Equal(2, contexts.Count);
+    }
+
+    [AvaloniaFact]
+    public async Task CellPickingInterceptsHostedContentAndPreservesLayout()
+    {
+        using var host = new Host(1, 2);
+        var clicks = 0;
+        host.Matrix.ContentDefinitions = new[]
+        {
+            Definition("a", () =>
+            {
+                var button = new Button { Content = "Live content" };
+                button.Click += (_, _) => clicks++;
+                return button;
+            })
+        };
+        var id = host.Matrix.Layout.Cells[0].Id;
+        host.Matrix.SetContent(id, "a");
+        var before = host.Matrix.Layout;
+        var pick = host.Matrix.PickCellAsync((cell, _) => cell.Id == id);
+        host.Window.UpdateLayout();
+        Assert.False(host.Matrix.InsertColumnAfter(0));
+        var overlay = host.LayoutGrid.Children.OfType<Button>().Single(b => b.Tag is DashboardMatrixCellModel cell && cell.Id == id);
+        var point = overlay.TranslatePoint(new Point(100, 100), host.Window)!.Value;
+        host.Window.MouseDown(point, MouseButton.Left);
+        host.Window.MouseUp(point, MouseButton.Left);
+        Assert.Equal(id, await pick);
+        Assert.Equal(0, clicks);
+        Assert.Same(before, host.Matrix.Layout);
+        Assert.False(host.Matrix.IsPickingCell);
+        Assert.DoesNotContain(host.LayoutGrid.Children.OfType<Button>(), b => b.Tag is DashboardMatrixCellModel);
+    }
+
+    [AvaloniaFact]
+    public async Task PickingSupportsKeyboardAndCancellationWithoutLeakingOverlays()
+    {
+        using var host = new Host(1, 2);
+        var pick = host.Matrix.PickCellAsync((_, _) => true);
+        host.Window.KeyPress(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        host.Window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Assert.Equal(host.Matrix.Layout.Cells[1].Id, await pick);
+        using var cts = new CancellationTokenSource();
+        pick = host.Matrix.PickCellAsync((_, _) => true, cts.Token);
+        cts.Cancel();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(await pick);
+        Assert.False(host.Matrix.IsPickingCell);
+        Assert.DoesNotContain(host.LayoutGrid.Children.OfType<Button>(), b => b.Tag is DashboardMatrixCellModel);
+    }
+
+    [AvaloniaFact]
+    public async Task ChangingLayoutCancelsPendingPick()
+    {
+        using var host = new Host(1, 2);
+        var pick = host.Matrix.PickCellAsync((_, _) => true);
+        host.Matrix.RestoreLayout(new DashboardMatrixLayout());
+        Assert.Null(await pick);
+        Assert.False(host.Matrix.IsPickingCell);
+    }
+
+    [AvaloniaFact]
     public void NativeGridContainsGlobalSplittersAndMinimumDimensions()
     {
         using var host = new Host(2, 3);
-        
-        Assert.Equal(3, host.Grid.RowDefinitions.Count);
-        Assert.Equal(5, host.Grid.ColumnDefinitions.Count);
-        Assert.Equal(6, host.Grid.Children.OfType<Tile>().Count());
-        
-        var splitters = host.Grid.Children.OfType<GridSplitter>().ToArray();
-        
+
+        Assert.Equal(3, host.LayoutGrid.RowDefinitions.Count);
+        Assert.Equal(5, host.LayoutGrid.ColumnDefinitions.Count);
+        Assert.Equal(6, host.LayoutGrid.Children.OfType<Tile>().Count());
+
+        var splitters = host.LayoutGrid.Children.OfType<GridSplitter>().ToArray();
+
         Assert.Equal(3, splitters.Length);
         Assert.All(splitters, s =>
         {
@@ -36,15 +260,15 @@ public class MatrixControlTests
             Assert.NotEmpty(AutomationProperties.GetName(s)!);
             Assert.Equal(8d, s.ResizeDirection == GridResizeDirection.Rows ? s.Bounds.Height : s.Bounds.Width);
         });
-        Assert.Equal(6d, host.Grid.ColumnDefinitions[1].ActualWidth);
-        Assert.Equal(96d, host.Grid.ColumnDefinitions[0].MinWidth);
-        Assert.Equal(72d, host.Grid.RowDefinitions[0].MinHeight);
+        Assert.Equal(6d, host.LayoutGrid.ColumnDefinitions[1].ActualWidth);
+        Assert.Equal(96d, host.LayoutGrid.ColumnDefinitions[0].MinWidth);
+        Assert.Equal(72d, host.LayoutGrid.RowDefinitions[0].MinHeight);
         Assert.All(splitters.Where(s => s.ResizeDirection == GridResizeDirection.Columns),
-                   s => Assert.Equal(3, Grid.GetRowSpan(s)));
-        Assert.All(host.Grid.Children.OfType<Tile>(), c =>
+                   s => Assert.Equal(3, AvaloniaGrid.GetRowSpan(s)));
+        Assert.All(host.LayoutGrid.Children.OfType<Tile>(), c =>
         {
-            Assert.Equal(0, Grid.GetRow(c) % 2);
-            Assert.Equal(0, Grid.GetColumn(c) % 2);
+            Assert.Equal(0, AvaloniaGrid.GetRow(c) % 2);
+            Assert.Equal(0, AvaloniaGrid.GetColumn(c) % 2);
         });
     }
 
@@ -52,32 +276,32 @@ public class MatrixControlTests
     public void ExpandedHitTargetResizesAndUpdatesPersistentWeights()
     {
         using var host = new Host(1, 2);
-        var splitter = host.Grid.Children.OfType<GridSplitter>().Single();
+        var splitter = host.LayoutGrid.Children.OfType<GridSplitter>().Single();
         var start = splitter.TranslatePoint(new Point(3, 100), host.Window)!.Value;
-        
+
         host.Window.MouseMove(start);
-        
+
         var hit = host.Window.InputHitTest(start) as Visual;
-        
+
         Assert.True(hit is not null && (ReferenceEquals(hit, splitter) || hit.GetVisualAncestors().Contains(splitter)),
-                    $"Hit={hit}; start={start}; splitter={splitter.Bounds}; grid={host.Grid.Bounds}; window={host.Window.Bounds}; content={host.Matrix.Bounds}");
-        
-        var before = host.Grid.ColumnDefinitions[0].ActualWidth;
-        
+                    $"Hit={hit}; start={start}; splitter={splitter.Bounds}; grid={host.LayoutGrid.Bounds}; window={host.Window.Bounds}; content={host.Matrix.Bounds}");
+
+        var before = host.LayoutGrid.ColumnDefinitions[0].ActualWidth;
+
         host.Window.MouseDown(start, MouseButton.Left);
         host.Window.MouseMove(start + new Vector(50, 0));
         host.Window.MouseUp(start + new Vector(50, 0), MouseButton.Left);
         host.Window.UpdateLayout();
-        
+
         var snapshot = host.Matrix.GetSnapshot();
-        
-        Assert.True(host.Grid.ColumnDefinitions[0].ActualWidth > before);
+
+        Assert.True(host.LayoutGrid.ColumnDefinitions[0].ActualWidth > before);
         Assert.True(snapshot.Columns[0] > snapshot.Columns[1]);
-        
+
         var oldWeight = snapshot.Columns[0];
-        
+
         host.Matrix.InsertColumnAfter(0);
-        
+
         Assert.Equal(oldWeight / 2, host.Matrix.Layout.Columns[0]);
         Assert.Equal(oldWeight / 2, host.Matrix.Layout.Columns[1]);
     }
@@ -86,24 +310,24 @@ public class MatrixControlTests
     public void KeyboardResizingAndProportionVetoWork()
     {
         using var host = new Host(2, 2);
-        var splitter = host.Grid.Children.OfType<GridSplitter>().First(s => s.ResizeDirection == GridResizeDirection.Rows);
-        
+        var splitter = host.LayoutGrid.Children.OfType<GridSplitter>().First(s => s.ResizeDirection == GridResizeDirection.Rows);
+
         splitter.Focus(NavigationMethod.Tab);
         host.Window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
         host.Window.KeyRelease(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
         host.Window.UpdateLayout();
-        
+
         var resized = host.Matrix.GetSnapshot();
-        
+
         Assert.True(resized.Rows[0] > resized.Rows[1]);
-        
+
         host.Matrix.LayoutChanging += (_, e) => e.Cancel = e.Kind == DashboardMatrixChangeKind.Proportions;
         host.Window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
         host.Window.KeyRelease(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
         host.Matrix.GetSnapshot();
-        
+
         Assert.Same(resized, host.Matrix.Layout);
-        Assert.Equal(resized.Rows[0], host.Grid.RowDefinitions[0].Height.Value);
+        Assert.Equal(resized.Rows[0], host.LayoutGrid.RowDefinitions[0].Height.Value);
     }
 
     [AvaloniaFact]
@@ -113,11 +337,11 @@ public class MatrixControlTests
         var created = new List<DisposableControl>();
         host.Matrix.ContentDefinitions = Catalog(created);
         host.Matrix.DisposeRemovedContent = true;
-        
+
         var id = host.Matrix.Layout.Cells[0].Id;
-        
+
         host.Matrix.SetContent(id, "a");
-        
+
         var before = host.Matrix.Layout;
         var changed = 0;
         host.Matrix.LayoutChanged += (_, _) => changed++;
@@ -125,10 +349,10 @@ public class MatrixControlTests
         {
             Assert.Same(before, e.Before);
             Assert.Contains(e.AffectedCells, c => c.Id == id && c.ContentId == "a");
-            
+
             e.Cancel = true;
         };
-        
+
         Assert.False(host.Matrix.RemoveRow(0));
         Assert.Same(before, host.Matrix.Layout);
         Assert.Equal(0, changed);
@@ -143,33 +367,33 @@ public class MatrixControlTests
         var created = new List<DisposableControl>();
         host.Matrix.ContentDefinitions = Catalog(created);
         host.Matrix.DisposeRemovedContent = true;
-        
+
         var a = host.Matrix.Layout.Cells[0].Id;
         var b = host.Matrix.Layout.Cells[3].Id;
-        
+
         host.Matrix.SetContent(a, "a");
         host.Matrix.SetContent(b, "b");
-        
+
         var first = Cell(host, a).Content;
         var second = Cell(host, b).Content;
-        
+
         host.Matrix.InsertColumnBefore(0);
-        
+
         Assert.Same(first, Cell(host, a).Content);
-        
+
         host.Matrix.SwapContent(a, b);
-        
+
         Assert.Same(first, Cell(host, b).Content);
         Assert.Same(second, Cell(host, a).Content);
         Assert.Equal(2, created.Count);
         Assert.All(created, c => Assert.Equal(0, c.DisposeCount));
-        
+
         host.Matrix.ClearContent(a);
-        
+
         Assert.Equal(1, ((DisposableControl) second!).DisposeCount);
-        
+
         host.Matrix.RemoveRow(1);
-        
+
         Assert.Equal(1, ((DisposableControl) first!).DisposeCount);
     }
 
@@ -179,13 +403,13 @@ public class MatrixControlTests
         using var host = new Host(1, 2);
         var control = new DisposableControl();
         host.Matrix.ContentDefinitions = new[] { Definition("a", () => control), Definition("bad", () => throw new InvalidOperationException("factory failed")) };
-        
+
         var id = host.Matrix.Layout.Cells[0].Id;
-        
+
         host.Matrix.SetContent(id, "a");
-        
+
         var before = host.Matrix.Layout;
-        
+
         Assert.Throws<InvalidOperationException>(() => host.Matrix.SetContent(id, "bad"));
         Assert.Same(before, host.Matrix.Layout);
         Assert.Same(control, Cell(host, id).Content);
@@ -201,10 +425,10 @@ public class MatrixControlTests
         var created = new List<DisposableControl>();
         host.Matrix.DisposeRemovedContent = true;
         host.Matrix.ContentDefinitions = Catalog(created).Append(Definition("bad", () => throw new Exception("failed"))).ToArray();
-        
+
         var before = host.Matrix.Layout;
         var next = before.WithContent(before.Cells[0].Id, "a").WithContent(before.Cells[1].Id, "bad");
-        
+
         Assert.Throws<Exception>(() => host.Matrix.RestoreLayout(next));
         Assert.Same(before, host.Matrix.Layout);
         Assert.Equal(1, Assert.Single(created).DisposeCount);
@@ -216,22 +440,22 @@ public class MatrixControlTests
         using var host = new Host(1, 1);
         var definitions = new ObservableCollection<DashboardContentDefinition>();
         host.Matrix.ContentDefinitions = definitions;
-        
+
         var id = host.Matrix.Layout.Cells[0].Id;
-        
+
         host.Matrix.SetContent(id, "late");
-        
+
         Assert.IsType<TextBlock>(Cell(host, id).Content);
-        
+
         var control = new DisposableControl();
-        
+
         definitions.Add(Definition("late", () => control));
-        
+
         Assert.Same(control, Cell(host, id).Content);
         Assert.Equal("late", host.Matrix.Layout.GetCell(id).ContentId);
-        
+
         definitions.Clear();
-        
+
         Assert.IsType<TextBlock>(Cell(host, id).Content);
         Assert.Equal(0, control.DisposeCount); // opt-in ownership
     }
@@ -242,40 +466,40 @@ public class MatrixControlTests
         using var host = new Host(1, 1);
         var definitions = new ObservableCollection<DashboardContentDefinition>();
         var control = new DisposableControl();
-        
+
         definitions.Add(Definition("a", () => control));
         host.Matrix.ContentDefinitions = definitions;
         host.Matrix.DisposeRemovedContent = true;
-        
+
         var id = host.Matrix.Layout.Cells[0].Id;
-        
+
         host.Matrix.SetContent(id, "a");
         host.Window.Content = null;
-        
+
         Assert.Equal(0, control.DisposeCount);
-        
+
         host.Window.Content = host.Matrix;
         host.Window.UpdateLayout();
-        
+
         Assert.Same(control, Cell(host, id).Content);
-        
+
         host.Matrix.Template = new FuncControlTemplate<DashboardMatrix>((_, scope) =>
         {
-            var grid = new Grid { Name = "PART_Grid" };
-            
+            var grid = new AvaloniaGrid { Name = "PART_Grid" };
+
             scope.Register("PART_Grid", grid);
-            
+
             return grid;
         });
         host.Matrix.ApplyTemplate();
         host.Window.UpdateLayout();
-        
+
         Assert.Same(control, Cell(host, id).Content);
-        
+
         host.Matrix.Dispose();
-        
+
         Assert.Equal(1, control.DisposeCount);
-        
+
         definitions.Add(Definition("b", () => throw new Exception("disposed matrix must not subscribe")));
     }
 
@@ -284,18 +508,18 @@ public class MatrixControlTests
     {
         using var host = new Host(1, 2);
         host.Matrix.CanModifyStructure = false;
-        
+
         Assert.False(host.Matrix.InsertRowAfter(0));
-        
+
         host.Matrix.CanResize = false;
-        
-        Assert.All(host.Grid.Children.OfType<GridSplitter>(), s => Assert.False(s.IsHitTestVisible));
-        
+
+        Assert.All(host.LayoutGrid.Children.OfType<GridSplitter>(), s => Assert.False(s.IsHitTestVisible));
+
         var ids = host.Matrix.Layout.Cells.Select(c => c.Id).ToArray();
-        
+
         host.Matrix.SetContent(ids[0], "unknown");
         host.Matrix.MoveContent(ids[0], ids[1]);
-        
+
         Assert.Null(host.Matrix.Layout.GetCell(ids[0]).ContentId);
         Assert.Equal("unknown", host.Matrix.Layout.GetCell(ids[1]).ContentId);
         Assert.Throws<InvalidOperationException>(() => host.Matrix.MoveContent(ids[0], ids[1]));
@@ -310,21 +534,21 @@ public class MatrixControlTests
         host.Matrix.ContentDefinitions = new[] { Definition("editor", () => editor) };
         host.Matrix.SetContent(host.Matrix.Layout.Cells[0].Id, "editor");
         host.Window.UpdateLayout();
-        
-        var cell = host.Grid.Children.OfType<Tile>().Single();
+
+        var cell = host.LayoutGrid.Children.OfType<Tile>().Single();
         var button = cell.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_Actions");
-        
+
         Assert.True(button.IsVisible);
         Assert.True(button.Focusable);
         Assert.True(button.Bounds.Width >= 28);
         Assert.Equal(0, button.Opacity);
-        
+
         button.Focus();
-        
+
         Assert.True(button.Opacity > 0);
         Assert.Null(cell.ContextMenu);
         Assert.Same(menu, editor.ContextMenu);
-        
+
         button.Focus();
         host.Window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
         host.Window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
@@ -335,12 +559,12 @@ public class MatrixControlTests
     public void SplitterIntersectionHasDeterministicHitTargets()
     {
         using var host = new Host(2, 2);
-        var column = host.Grid.Children.OfType<GridSplitter>().First(s => s.ResizeDirection == GridResizeDirection.Columns);
-        var row = host.Grid.Children.OfType<GridSplitter>().First(s => s.ResizeDirection == GridResizeDirection.Rows);
-        var crossing = host.Grid.TranslatePoint(new Point(column.Bounds.Center.X, row.Bounds.Center.Y), host.Window)!.Value;
-        
+        var column = host.LayoutGrid.Children.OfType<GridSplitter>().First(s => s.ResizeDirection == GridResizeDirection.Columns);
+        var row = host.LayoutGrid.Children.OfType<GridSplitter>().First(s => s.ResizeDirection == GridResizeDirection.Rows);
+        var crossing = host.LayoutGrid.TranslatePoint(new Point(column.Bounds.Center.X, row.Bounds.Center.Y), host.Window)!.Value;
+
         host.Window.MouseMove(crossing);
-        
+
         Assert.True(IsHit(host.Window.InputHitTest(crossing), row));
         Assert.True(IsHit(host.Window.InputHitTest(crossing + new Vector(0, 30)), column));
         Assert.True(IsHit(host.Window.InputHitTest(crossing + new Vector(30, 0)), row));
@@ -352,24 +576,24 @@ public class MatrixControlTests
     public void PointerResizeRespectsMinimumSizeAndDisabledInput()
     {
         using var host = new Host(1, 2);
-        var splitter = host.Grid.Children.OfType<GridSplitter>().Single();
+        var splitter = host.LayoutGrid.Children.OfType<GridSplitter>().Single();
         var start = splitter.TranslatePoint(new Point(4, 80), host.Window)!.Value;
-        
+
         host.Window.MouseDown(start, MouseButton.Left);
         host.Window.MouseMove(start + new Vector(1000, 0));
         host.Window.MouseUp(start + new Vector(1000, 0), MouseButton.Left);
         host.Window.UpdateLayout();
-        
-        Assert.True(host.Grid.ColumnDefinitions[2].ActualWidth >= host.Matrix.MinCellWidth);
-        
+
+        Assert.True(host.LayoutGrid.ColumnDefinitions[2].ActualWidth >= host.Matrix.MinCellWidth);
+
         var before = host.Matrix.GetSnapshot();
         host.Matrix.CanResize = false;
-        splitter = host.Grid.Children.OfType<GridSplitter>().Single();
+        splitter = host.LayoutGrid.Children.OfType<GridSplitter>().Single();
         start = splitter.TranslatePoint(new Point(4, 80), host.Window)!.Value;
         host.Window.MouseDown(start, MouseButton.Left);
         host.Window.MouseMove(start - new Vector(100, 0));
         host.Window.MouseUp(start - new Vector(100, 0), MouseButton.Left);
-        
+
         Assert.Equal(before.Columns, host.Matrix.GetSnapshot().Columns);
     }
 
@@ -379,14 +603,14 @@ public class MatrixControlTests
         using var host = new Host(1, 2);
         var editor = new TextBox { Text = "unsaved" };
         host.Matrix.ContentDefinitions = new[] { Definition("edit", () => editor), Definition("other", () => new TextBlock()) };
-        
+
         var first = host.Matrix.Layout.Cells[0].Id;
-        
+
         host.Matrix.SetContent(first, "edit");
         host.Window.UpdateLayout();
         editor.Focus();
         host.Matrix.SetContent(host.Matrix.Layout.Cells[1].Id, "other");
-        
+
         Assert.True(editor.IsFocused);
         Assert.Equal("unsaved", editor.Text);
     }
@@ -400,16 +624,16 @@ public class MatrixControlTests
         host.Matrix.ContentDefinitions = new[] { Definition("throws", () => new ThrowingDisposable(() => count++)) };
         foreach (var cell in host.Matrix.Layout.Cells.Where(c => c.Row == 0))
             host.Matrix.SetContent(cell.Id, "throws");
-        
+
         var notified = false;
         host.Matrix.LayoutChanged += (_, e) => notified = e.Kind == DashboardMatrixChangeKind.RemoveRow;
-        
+
         var error = Assert.Throws<AggregateException>(() => host.Matrix.RemoveRow(0));
         Assert.Equal(2, error.InnerExceptions.Count);
         Assert.Equal(2, count);
         Assert.True(notified);
         Assert.Single(host.Matrix.Layout.Rows);
-        Assert.Equal(2, host.Grid.Children.OfType<Tile>().Count());
+        Assert.Equal(2, host.LayoutGrid.Children.OfType<Tile>().Count());
     }
 
     [AvaloniaFact]
@@ -422,7 +646,7 @@ public class MatrixControlTests
             Definition("a", () =>
             {
                 calls++;
-                
+
                 return new TextBlock();
             })
         };
@@ -430,10 +654,10 @@ public class MatrixControlTests
         {
             Assert.Throws<InvalidOperationException>(() => host.Matrix.InsertRowAfter(0));
             Assert.Throws<InvalidOperationException>(() => host.Matrix.Dispose());
-            
+
             e.Cancel = true;
         };
-        
+
         Assert.False(host.Matrix.SetContent(host.Matrix.Layout.Cells[0].Id, "a"));
         Assert.Equal(0, calls);
         Assert.Null(host.Matrix.Layout.Cells[0].ContentId);
@@ -447,27 +671,27 @@ public class MatrixControlTests
         host.Matrix.ContentDefinitions = catalog;
         host.Matrix.SetContent(host.Matrix.Layout.Cells[0].Id, "a");
         host.Matrix.DisposeRemovedContent = true;
-        
+
         var created = 0;
         var control = new DisposableControl();
         host.Window.Content = null;
         catalog.Add(Definition("a", () =>
         {
             created++;
-            
+
             return control;
         }));
-        
+
         Assert.Equal(0, created);
-        
+
         host.Window.Content = host.Matrix;
         host.Window.UpdateLayout();
-        
+
         Assert.Equal(1, created);
-        
+
         host.Matrix.Dispose();
         host.Matrix.Dispose();
-        
+
         Assert.Equal(1, control.DisposeCount);
     }
 
@@ -492,15 +716,15 @@ public class MatrixControlTests
     {
         using var host = new Host(1, 3);
         var before = host.Matrix.GetSnapshot();
-        var splitter = host.Grid.Children.OfType<GridSplitter>().First();
+        var splitter = host.LayoutGrid.Children.OfType<GridSplitter>().First();
         var start = splitter.TranslatePoint(new Point(4, 80), host.Window)!.Value;
-        
+
         host.Window.MouseDown(start, MouseButton.Left);
         host.Window.MouseMove(start + new Vector(50, 0));
         host.Window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
         host.Window.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
         host.Window.MouseUp(start + new Vector(50, 0), MouseButton.Left);
-        
+
         var after = host.Matrix.GetSnapshot();
         var beforeTotal = before.Columns.Sum();
         var afterTotal = after.Columns.Sum();
@@ -512,13 +736,13 @@ public class MatrixControlTests
     public void SplitterKeyboardFocusHasAVisibleOutline()
     {
         using var host = new Host(1, 2);
-        var splitter = host.Grid.Children.OfType<GridSplitter>().Single();
-        
+        var splitter = host.LayoutGrid.Children.OfType<GridSplitter>().Single();
+
         splitter.Focus(NavigationMethod.Tab);
         host.Window.UpdateLayout();
-        
+
         var target = splitter.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_HitTarget");
-        
+
         Assert.Equal(new Thickness(1), target.BorderThickness);
         Assert.NotNull(target.BorderBrush);
     }
@@ -528,26 +752,26 @@ public class MatrixControlTests
     {
         using var host = new Host(3, 1);
         var before = host.Matrix.GetSnapshot();
-        var splitter = host.Grid.Children.OfType<GridSplitter>().First();
+        var splitter = host.LayoutGrid.Children.OfType<GridSplitter>().First();
         var start = splitter.TranslatePoint(new Point(100, 4), host.Window)!.Value;
-        
+
         host.Window.MouseDown(start, MouseButton.Left);
         host.Window.MouseMove(start + new Vector(0, 30));
-        
+
         var button = host.Matrix.GetVisualDescendants().OfType<Button>().First(b => b.Name == "PART_Actions");
-        
+
         button.Focus();
         host.Window.MouseUp(start + new Vector(0, 30), MouseButton.Left);
-        
+
         Assert.Equal(before.Rows, host.Matrix.GetSnapshot().Rows);
     }
 
     private static Tile Cell(Host host, Guid id)
     {
         var model = host.Matrix.Layout.GetCell(id);
-        
+
         return host.Matrix.GetVisualDescendants().OfType<Tile>()
-                   .Single(c => Grid.GetRow(c) == model.Row * 2 && Grid.GetColumn(c) == model.Column * 2);
+                   .Single(c => AvaloniaGrid.GetRow(c) == model.Row * 2 && AvaloniaGrid.GetColumn(c) == model.Column * 2);
     }
 
     private static DashboardContentDefinition Definition(string id, Func<Control> factory) => new DashboardContentDefinition { Id = id, Title = id, Factory = factory };
@@ -557,9 +781,9 @@ public class MatrixControlTests
         Control Create()
         {
             var control = new DisposableControl();
-            
+
             created.Add(control);
-            
+
             return control;
         }
 
@@ -589,7 +813,7 @@ public class MatrixControlTests
 
         public Window Window { get; }
 
-        public Grid Grid => Matrix.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "PART_Grid");
+        public AvaloniaGrid LayoutGrid => Matrix.GetVisualDescendants().OfType<AvaloniaGrid>().First(g => g.Name == "PART_Grid");
 
         public void Dispose()
         {

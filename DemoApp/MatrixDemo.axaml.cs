@@ -5,7 +5,8 @@ using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using MiniDashboard.Avalonia;
+using MiniDashboard.Avalonia.Content;
+using MiniDashboard.Avalonia.Matrix;
 
 namespace DemoApp;
 
@@ -91,6 +92,27 @@ public partial class MatrixDemo : UserControl, IDisposable
 
     private void Reset_Click(object? sender, RoutedEventArgs e) => Reset();
 
+    private void SearchPicker_Changed(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox checkbox || Matrix == null)
+            return;
+
+        DashboardContentPicker.SetPicker(Matrix, checkbox.IsChecked == true ? new DashboardContentPicker { GroupByCategory = true } : null);
+        Feedback.Text = checkbox.IsChecked == true
+            ? "Searchable content picker enabled: use '+ Add content' or a cell menu's 'Change content'."
+            : "Compact content menu enabled: use '+ Add content' or a cell menu's 'Change content'.";
+    }
+
+    private async void Pick_Click(object? sender, RoutedEventArgs e)
+    {
+        if (Matrix.IsPickingCell)
+            return;
+
+        Feedback.Text = "Choose a populated cell; Escape cancels without interacting with its content.";
+        var id = await Matrix.PickCellAsync((cell, _) => cell.ContentId is not null);
+        Feedback.Text = id.HasValue ? $"Selected {Matrix.Layout.GetCell(id.Value).ContentId}" : "Selection cancelled.";
+    }
+
     private void Swap_Click(object? sender, RoutedEventArgs e) => Matrix.SwapContent(Matrix.Layout.Cells[0].Id, Matrix.Layout.Cells[^1].Id);
 
     private void Save_Click(object? sender, RoutedEventArgs e)
@@ -104,10 +126,10 @@ public partial class MatrixDemo : UserControl, IDisposable
         if (_saved is null)
         {
             Feedback.Text = "Save a snapshot first.";
-            
+
             return;
         }
-        
+
         Matrix.RestoreLayout(JsonSerializer.Deserialize<DashboardMatrixLayout>(_saved)!);
         Feedback.Text = "Restored the saved matrix snapshot.";
     }

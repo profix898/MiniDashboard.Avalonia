@@ -1,9 +1,10 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:media="clr-namespace:MiniDashboard.Avalonia">
+                    xmlns:grid="clr-namespace:MiniDashboard.Avalonia.Grid;assembly=MiniDashboard.Avalonia"
+                    xmlns:tiles="clr-namespace:MiniDashboard.Avalonia.Tiles">
 
-    <ControlTheme x:Key="{x:Type media:ImageTile}" TargetType="media:ImageTile"
-                  BasedOn="{StaticResource {x:Type media:Tile}}">
+    <ControlTheme x:Key="{x:Type tiles:ImageTile}" TargetType="tiles:ImageTile"
+                  BasedOn="{StaticResource {x:Type tiles:Tile}}">
         <Setter Property="TileHeader" Value="Image" />
         <Setter Property="Template">
             <ControlTemplate>
@@ -17,7 +18,7 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <media:DashboardHeader Grid.Row="0" x:Name="PART_Header"
+                        <tiles:DashboardHeader Grid.Row="0" x:Name="PART_Header"
                                                IsVisible="{TemplateBinding IsHeaderPresented}"
                                                Title="{TemplateBinding TileHeader}"
                                                IsPlacementValid="{TemplateBinding IsPlacementValid}"
@@ -25,7 +26,7 @@
                                                ContentTemplate="{TemplateBinding HeaderTemplate}"
                                                Actions="{TemplateBinding EffectiveHeaderActions}"
                                                CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource TopCornersOnlyConverter}}"
-                                               media:DraggableBehavior.IsEnabled="True" />
+                                               grid:DraggableBehavior.IsEnabled="True" />
 
                         <Border Grid.Row="1" Padding="{TemplateBinding Padding}">
                             <Image Source="{TemplateBinding ImageSource}"

@@ -41,7 +41,7 @@ public class CsvGridTile : TreeDataGridTile
         if (String.IsNullOrWhiteSpace(FilePath) || !File.Exists(FilePath))
         {
             Source = null;
-            
+
             return;
         }
 
@@ -61,7 +61,7 @@ public class CsvGridTile : TreeDataGridTile
             if (lines.Count < 1)
             {
                 Source = null;
-                
+
                 return;
             }
 
@@ -72,7 +72,7 @@ public class CsvGridTile : TreeDataGridTile
                                 var dict = new Dictionary<string, string>();
                                 for (var i = 0; i < headers.Length; i++)
                                     dict[headers[i]] = i < parts.Length ? parts[i] : "";
-                                
+
                                 return dict;
                             })
                             .ToList();

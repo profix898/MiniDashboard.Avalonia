@@ -11,6 +11,10 @@ using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using DemoApp;
+using MiniDashboard.Avalonia.Content;
+using MiniDashboard.Avalonia.Grid;
+using MiniDashboard.Avalonia.Matrix;
+using MiniDashboard.Avalonia.Tiles;
 using Xunit;
 
 namespace MiniDashboard.Avalonia.Tests;
@@ -29,12 +33,12 @@ public class MatrixDemoTests
         {
             window.Show();
             window.UpdateLayout();
-            
+
             var matrix = demo.GetVisualDescendants().OfType<DashboardMatrix>().Single();
             using var frame = window.CaptureRenderedFrame();
-            
+
             Assert.NotNull(frame);
-            
+
             foreach (var model in matrix.Layout.Cells.Where(c => c.Column == matrix.Layout.Columns.Count - 1))
             {
                 var tile = matrix.GetTile(model.Id)!;
@@ -43,7 +47,7 @@ public class MatrixDemoTests
                 try
                 {
                     frame.CopyPixels(new PixelRect((int) Math.Round(edge.X), (int) Math.Round(edge.Y), 1, 1), pixel, 4, 4);
-                    
+
                     Assert.True(Marshal.ReadByte(pixel, 0) < 240 && Marshal.ReadByte(pixel, 1) < 240 &&
                                 Marshal.ReadByte(pixel, 2) < 240, $"Right border is missing at {edge}, width {width}, row {model.Row}.");
                 }
@@ -52,7 +56,7 @@ public class MatrixDemoTests
                     Marshal.FreeHGlobal(pixel);
                 }
             }
-            
+
             matrix.Dispose();
         }
         finally
@@ -72,12 +76,12 @@ public class MatrixDemoTests
         {
             window.Show();
             window.UpdateLayout();
-            
+
             var matrix = demo.GetVisualDescendants().OfType<DashboardMatrix>().Single();
             using (var frame = window.CaptureRenderedFrame())
             {
                 Assert.NotNull(frame);
-                
+
                 var directory = Environment.GetEnvironmentVariable("MATRIX_TEST_CAPTURE_DIR");
                 if (!String.IsNullOrEmpty(directory))
                 {
@@ -85,21 +89,21 @@ public class MatrixDemoTests
                     frame.Save(Path.Combine(directory, $"matrix-{width}-{(dark ? "dark" : "light")}.png"), PngBitmapEncoderOptions.Default);
                 }
             }
-            
+
             Assert.Equal(6, matrix.Layout.Cells.Count);
-            
+
             var buttons = demo.GetVisualDescendants().OfType<Button>().ToArray();
-            
+
             buttons.Single(b => Equals(b.Content, "Save snapshot")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             matrix.InsertColumnAfter(0);
-            
+
             Assert.Equal(8, matrix.Layout.Cells.Count);
-            
+
             buttons.Single(b => Equals(b.Content, "Restore snapshot")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            
+
             Assert.Equal(6, matrix.Layout.Cells.Count);
             Assert.False(matrix.RemoveRow(0)); // Demo's host protection vetoes populated removal.
-            
+
             matrix.Dispose();
         }
         finally
@@ -119,34 +123,34 @@ public class MatrixDemoTests
         {
             window.Show();
             window.UpdateLayout();
-            
+
             var matrix = demo.GetVisualDescendants().OfType<DashboardMatrix>().Single();
             var catalog = Assert.IsType<DashboardContentCatalog>(matrix.ContentDefinitions);
             var tiles = demo.GetVisualDescendants().OfType<DashboardContentTile>().Where(t => t.Parent is DashboardPanel).ToArray();
-            
+
             Assert.Equal(3, tiles.Length);
             Assert.All(tiles, t => Assert.Same(catalog, t.ContentDefinitions));
             Assert.All(tiles, t => Assert.False(String.IsNullOrEmpty(t.TileHeader)));
             Assert.Equal(4, matrix.Layout.Cells.Count);
             Assert.Equal(3, matrix.Layout.Cells.Count(c => c.ContentId is not null));
-            
+
             demo.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add catalog entry"))
                 .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            
+
             Assert.Equal(5, catalog.Count);
-            
+
             // The new entry is instantly selectable in the add menus of both hosts.
-            var classicMenu = Assert.IsType<MenuFlyout>(tiles.Single(t => t.ContentId is null).AddContentActions);
-            Assert.Contains(classicMenu.Items.OfType<MenuItem>(), m => Equals(m.Header, "Added content 1"));
-            
+            var tileGridMenu = Assert.IsType<MenuFlyout>(tiles.Single(t => t.ContentId is null).AddContentActions);
+            Assert.Contains(tileGridMenu.Items.OfType<MenuItem>(), m => Equals(m.Header, "Added content 1"));
+
             var emptyCell = matrix.Layout.Cells.Single(c => c.ContentId is null);
             var matrixMenu = Assert.IsType<MenuFlyout>(matrix.GetTile(emptyCell.Id)!.AddContentActions);
             Assert.Contains(matrixMenu.Items.OfType<MenuItem>(), m => Equals(m.Header, "Added content 1"));
-            
+
             using var frame = window.CaptureRenderedFrame();
-            
+
             Assert.NotNull(frame);
-            
+
             var directory = Environment.GetEnvironmentVariable("MATRIX_TEST_CAPTURE_DIR");
             if (!String.IsNullOrEmpty(directory))
             {

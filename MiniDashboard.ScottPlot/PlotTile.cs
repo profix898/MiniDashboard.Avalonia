@@ -2,6 +2,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using MiniDashboard.Avalonia.Tiles;
 using ScottPlot.Avalonia;
 
 namespace MiniDashboard.Avalonia.ScottPlot;

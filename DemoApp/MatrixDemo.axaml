@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:dash="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+             xmlns:matrix="clr-namespace:MiniDashboard.Avalonia.Matrix;assembly=MiniDashboard.Avalonia"
              x:Class="DemoApp.MatrixDemo">
     <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="8">
         <WrapPanel Orientation="Horizontal">
@@ -8,6 +8,10 @@
             <Button Content="Swap first / last" Click="Swap_Click" Margin="4" />
             <Button Content="Save snapshot" Click="Save_Click" Margin="4" />
             <Button Content="Restore snapshot" Click="Restore_Click" Margin="4" />
+            <Button Content="Pick a cell" Click="Pick_Click" Margin="4" />
+            <CheckBox x:Name="SearchablePickerEnabled" Content="Searchable content picker"
+                      IsCheckedChanged="SearchPicker_Changed" Margin="8"
+                      ToolTip.Tip="Use a searchable list when adding or changing cell content. This does not change cell targeting." />
             <CheckBox x:Name="HeadersEnabled" Content="Headers" IsChecked="True" Margin="8" />
             <CheckBox x:Name="ResizeEnabled" Content="Resize" IsChecked="True" Margin="8" />
             <CheckBox x:Name="StructureEnabled" Content="Edit structure" IsChecked="True" Margin="8" />
@@ -17,13 +21,13 @@
                    Text="Use ⋯ in a header. With headers off, hover or tap a boundary (including outer edges) to reveal its menu button; the menu identifies adjacent cells. Drag the rest of a boundary to resize, or tab to a divider and use arrow keys. Row/column edits affect the entire matrix. Uncheck protection to remove populated rows or columns." />
         <ScrollViewer Grid.Row="2" x:Name="MatrixViewport" Margin="4"
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <dash:DashboardMatrix x:Name="Matrix" MinWidth="720" MinHeight="320"
-                                  Width="{Binding #MatrixViewport.Viewport.Width}"
-                                  Height="{Binding #MatrixViewport.Viewport.Height}"
-                                  IsHeaderVisible="{Binding #HeadersEnabled.IsChecked}"
-                                  CanResize="{Binding #ResizeEnabled.IsChecked}"
-                                  CanModifyStructure="{Binding #StructureEnabled.IsChecked}"
-                                  DisposeRemovedContent="True" />
+            <matrix:DashboardMatrix x:Name="Matrix" MinWidth="720" MinHeight="320"
+                                    Width="{Binding #MatrixViewport.Viewport.Width}"
+                                    Height="{Binding #MatrixViewport.Viewport.Height}"
+                                    IsHeaderVisible="{Binding #HeadersEnabled.IsChecked}"
+                                    CanResize="{Binding #ResizeEnabled.IsChecked}"
+                                    CanModifyStructure="{Binding #StructureEnabled.IsChecked}"
+                                    DisposeRemovedContent="True" />
         </ScrollViewer>
         <StackPanel Grid.Row="3" Margin="4,8">
             <TextBlock x:Name="Summary" TextWrapping="Wrap" />

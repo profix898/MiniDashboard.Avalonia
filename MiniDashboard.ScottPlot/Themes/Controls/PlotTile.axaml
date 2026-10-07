@@ -1,11 +1,12 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:base="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
+                    xmlns:grid="clr-namespace:MiniDashboard.Avalonia.Grid;assembly=MiniDashboard.Avalonia"
                     xmlns:scottPlot="clr-namespace:ScottPlot.Avalonia;assembly=ScottPlot.Avalonia"
-                    xmlns:charts="clr-namespace:MiniDashboard.Avalonia.ScottPlot">
+                    xmlns:charts="clr-namespace:MiniDashboard.Avalonia.ScottPlot"
+                    xmlns:tiles="clr-namespace:MiniDashboard.Avalonia.Tiles;assembly=MiniDashboard.Avalonia">
 
     <ControlTheme x:Key="{x:Type charts:PlotTile}" TargetType="charts:PlotTile"
-                  BasedOn="{StaticResource {x:Type base:Tile}}">
+                  BasedOn="{StaticResource {x:Type tiles:Tile}}">
         <Setter Property="TileHeader" Value="Chart" />
         <Setter Property="Template">
             <ControlTemplate>
@@ -19,15 +20,15 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <base:DashboardHeader Grid.Row="0" x:Name="PART_Header"
-                                              IsVisible="{TemplateBinding IsHeaderPresented}"
-                                              Title="{TemplateBinding TileHeader}"
-                                              IsPlacementValid="{TemplateBinding IsPlacementValid}"
-                                              Content="{TemplateBinding HeaderContent}"
-                                              ContentTemplate="{TemplateBinding HeaderTemplate}"
-                                              Actions="{TemplateBinding EffectiveHeaderActions}"
-                                              CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource TopCornersOnlyConverter}}"
-                                              base:DraggableBehavior.IsEnabled="True" />
+                        <tiles:DashboardHeader Grid.Row="0" x:Name="PART_Header"
+                                               IsVisible="{TemplateBinding IsHeaderPresented}"
+                                               Title="{TemplateBinding TileHeader}"
+                                               IsPlacementValid="{TemplateBinding IsPlacementValid}"
+                                               Content="{TemplateBinding HeaderContent}"
+                                               ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                               Actions="{TemplateBinding EffectiveHeaderActions}"
+                                               CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource TopCornersOnlyConverter}}"
+                                               grid:DraggableBehavior.IsEnabled="True" />
 
                         <Border Grid.Row="1" Padding="{TemplateBinding Padding}">
                             <scottPlot:AvaPlot x:Name="PART_AvaPlot" />

@@ -117,7 +117,7 @@ public class ScatterPlotTile : CartesianPlotTile
                     avaPlot.Plot.Add.Scatter(t.X, t.Y);
             };
             ComposePlotBuilder();
-            
+
             return;
         }
 
@@ -131,7 +131,7 @@ public class ScatterPlotTile : CartesianPlotTile
                 avaPlot.Plot.Add.Scatter(xs, ys);
             };
             ComposePlotBuilder();
-            
+
             return;
         }
 
@@ -145,7 +145,7 @@ public class ScatterPlotTile : CartesianPlotTile
                 avaPlot.Plot.Add.Scatter(xs, ys);
             };
             ComposePlotBuilder();
-            
+
             return;
         }
 

@@ -23,7 +23,7 @@ public partial class MainWindow : Window
             DynamicTiles.CollectionChanged -= OnDynamicTilesChanged;
             foreach (var tile in DynamicTiles)
                 tile.PropertyChanged -= OnDynamicTilePropertyChanged;
-            
+
             CatalogExample.Dispose();
             MatrixExample.Dispose();
             DynamicDashboard.Dispose();

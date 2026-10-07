@@ -1,0 +1,128 @@
+using System;
+using System.Linq;
+using Avalonia;
+using Avalonia.Controls;
+using MiniDashboard.Avalonia.Content;
+using MiniDashboard.Avalonia.Tiles;
+
+namespace MiniDashboard.Avalonia.Matrix;
+
+// Cell coordinates and structural actions belong to the host, not the shared tile.
+internal sealed class DashboardMatrixCell
+{
+    private readonly DashboardMatrix _owner;
+    private readonly Guid _id;
+    private readonly MenuFlyout _menu = new MenuFlyout();
+    private readonly MenuFlyout _addMenu = new MenuFlyout();
+
+    public Tile Tile { get; }
+
+    public DashboardMatrixCell(DashboardMatrix owner, Guid id, Tile tile)
+    {
+        _owner = owner;
+        _id = id;
+        Tile = tile;
+        Tile.PropertyChanged += TilePropertyChanged;
+    }
+
+    private void TilePropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == Tile.HeaderActionsProperty)
+            Populate(_menu);
+    }
+
+    public void Update(bool headers)
+    {
+        DashboardContentPicker.SetPicker(Tile, DashboardContentPicker.GetPicker(_owner));
+        Populate(_menu);
+        DashboardContentMenu.FillPickerFlyout(_addMenu, Tile, _owner.GetCatalog(), id => _owner.SetContent(_id, id));
+        Tile.SetMatrixHost(headers, _menu, _addMenu);
+    }
+
+    public void Release()
+    {
+        Tile.PropertyChanged -= TilePropertyChanged;
+        _menu.Hide();
+        _addMenu.Hide();
+        Tile.SetMatrixHost(null, null, null);
+        if (Tile is DashboardContentTile { IsMatrixManaged: true, ContentId: null } empty)
+            empty.ReleaseMatrixContent();
+    }
+
+    public MenuItem CreateContentMenu(string label)
+    {
+        var temporary = new MenuFlyout();
+        Populate(temporary, false);
+
+        var items = temporary.Items.ToArray();
+        temporary.Items.Clear();
+
+        var submenu = new MenuItem { Header = label };
+        foreach (var item in items)
+            submenu.Items.Add(item);
+
+        return submenu;
+    }
+
+    private void Populate(MenuFlyout menu, bool includeInsertion = true)
+    {
+        menu.Items.Clear();
+
+        var model = _owner.Layout.GetCell(_id);
+        if (Tile.HeaderActions is { } custom && Tile is not DashboardContentTile { IsMatrixManaged: true })
+        {
+            menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardTileActions", "Tile actions"), () =>
+            {
+                custom.ShowAt(Tile);
+
+                return true;
+            }));
+        }
+
+        var picker = DashboardContentMenu.CreatePicker(Tile, _owner.GetCatalog(), model.ContentId, id => _owner.SetContent(_id, id));
+        menu.Items.Add(picker);
+        if (includeInsertion)
+        {
+            menu.Items.Add(new Separator());
+            menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardInsertRowAbove", "Insert row above"), () => _owner.InsertRowBefore(Current().Row),
+                                  _owner.CanModifyStructure));
+            menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardInsertRowBelow", "Insert row below"), () => _owner.InsertRowAfter(Current().Row),
+                                  _owner.CanModifyStructure));
+            menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardInsertColumnLeft", "Insert column left"), () => _owner.InsertColumnBefore(Current().Column),
+                                  _owner.CanModifyStructure));
+            menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardInsertColumnRight", "Insert column right"), () => _owner.InsertColumnAfter(Current().Column),
+                                  _owner.CanModifyStructure));
+        }
+
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardClearContent", "Clear content"), () => _owner.ClearContent(_id), model.ContentId is not null));
+        menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardRemoveRow", "Remove row"), () => _owner.RemoveRow(Current().Row),
+                              _owner.CanModifyStructure && _owner.Layout.Rows.Count > 1));
+        menu.Items.Add(Action(DashboardContentMenu.Text(Tile, "DashboardRemoveColumn", "Remove column"), () => _owner.RemoveColumn(Current().Column),
+                              _owner.CanModifyStructure && _owner.Layout.Columns.Count > 1));
+
+        // Adjacent cells keep the move list compact in large matrices; every other destination
+        // remains reachable through repeated hops or the MoveContent/SwapContent APIs.
+        var move = new MenuItem { Header = DashboardContentMenu.Text(Tile, "DashboardMoveTile", "Move / swap tile") };
+        var directions = new (string Key, string Fallback, int Row, int Column)[]
+        {
+            ("DashboardCellAbove", "Cell above", model.Row - 1, model.Column), ("DashboardCellBelow", "Cell below", model.Row + 1, model.Column),
+            ("DashboardCellLeft", "Cell left", model.Row, model.Column - 1), ("DashboardCellRight", "Cell right", model.Row, model.Column + 1)
+        };
+        foreach (var (key, fallback, row, column) in directions)
+        {
+            var neighbor = _owner.Layout.Cells.FirstOrDefault(c => c.Row == row && c.Column == column);
+            if (neighbor is null)
+                continue;
+
+            move.Items.Add(Action(DashboardContentMenu.Text(Tile, key, fallback), () => _owner.SwapContent(_id, neighbor.Id)));
+        }
+
+        move.IsEnabled = model.ContentId is not null && move.Items.Count > 0;
+        menu.Items.Add(move);
+    }
+
+    private DashboardMatrixCellModel Current() => _owner.Layout.GetCell(_id);
+
+    private MenuItem Action(string title, Func<bool> execute, bool enabled = true) => DashboardContentMenu.Action(Tile, title, execute, enabled);
+}

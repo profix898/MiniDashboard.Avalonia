@@ -1,8 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:MiniDashboard.Avalonia.Converters;assembly=MiniDashboard.Avalonia"
-        xmlns:dashboard="clr-namespace:MiniDashboard.Avalonia;assembly=MiniDashboard.Avalonia"
         xmlns:controls="clr-namespace:MiniDashboard.Avalonia.TreeDataGridOS"
+        xmlns:grid="clr-namespace:MiniDashboard.Avalonia.Grid;assembly=MiniDashboard.Avalonia"
         x:Class="MiniDashboard.Avalonia.TreeDataGridOS.Themes.TreeDataGridStyles">
 
     <!-- Base theme for TreeDataGrid -->
@@ -23,21 +23,21 @@
     </Styles.Resources>
 
     <!-- Tiles bind CornerRadius to DashboardPanel.TileCornerRadius -->
-    <Style Selector="dashboard|DashboardPanel > controls|CsvGridTile">
+    <Style Selector="grid|DashboardPanel > controls|CsvGridTile">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
-    <Style Selector="dashboard|DashboardPanel > controls|TreeDataGridTile">
+    <Style Selector="grid|DashboardPanel > controls|TreeDataGridTile">
         <Setter Property="CornerRadius"
-                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileCornerRadius, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderBrush"
-                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderBrush, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
         <Setter Property="BorderThickness"
-                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=dashboard:DashboardPanel}}" />
+                Value="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType=grid:DashboardPanel}}" />
     </Style>
 
 </Styles>

@@ -21,7 +21,7 @@ public sealed class InverseBooleanConverter : IValueConverter
         // If input is a bool, return its inverse; otherwise signal no value
         if (value is bool b)
             return !b;
-        
+
         return AvaloniaProperty.UnsetValue;
     }
 
@@ -33,7 +33,7 @@ public sealed class InverseBooleanConverter : IValueConverter
         // Behave symmetrically: invert boolean on ConvertBack as well
         if (value is bool b)
             return !b;
-        
+
         return AvaloniaProperty.UnsetValue;
     }
 

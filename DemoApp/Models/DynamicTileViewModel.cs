@@ -51,7 +51,7 @@ public abstract class DynamicTileViewModel : INotifyPropertyChanged
 
         field = value;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        
+
         return true;
     }
 }

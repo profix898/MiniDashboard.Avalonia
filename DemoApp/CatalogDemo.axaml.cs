@@ -5,8 +5,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using MiniDashboard.Avalonia;
+using MiniDashboard.Avalonia.Content;
 using MiniDashboard.Avalonia.ScottPlot.Cartesian;
+using MiniDashboard.Avalonia.Tiles;
 
 namespace DemoApp;
 
@@ -17,8 +18,8 @@ namespace DemoApp;
 public partial class CatalogDemo : UserControl, IDisposable
 {
     private readonly DashboardContentCatalog _catalog;
-    private readonly List<DashboardContentTile> _classicTiles = new();
-    private readonly List<(string Id, Tile Tile)> _completeTiles = new();
+    private readonly List<DashboardContentTile> _gridTiles = new List<DashboardContentTile>();
+    private readonly List<(string Id, Tile Tile)> _completeTiles = new List<(string Id, Tile Tile)>();
     private int _next = 1;
 
     public CatalogDemo()
@@ -36,28 +37,20 @@ public partial class CatalogDemo : UserControl, IDisposable
         // Body definitions: selectable in both hosts through the shared "+ Add content" menus.
         _catalog.Add(new DashboardContentDefinition
         {
-            Id = "notes", Title = "Notes",
-            Factory = () => new TextBox { AcceptsReturn = true, Text = "Independent instance", TextWrapping = TextWrapping.Wrap }
+            Id = "notes", Title = "Notes", Factory = () => new TextBox { AcceptsReturn = true, Text = "Independent instance", TextWrapping = TextWrapping.Wrap }
         });
         _catalog.Add(new DashboardContentDefinition
         {
             Id = "status", Title = "System status",
-            Factory = () => new StackPanel
-            {
-                Spacing = 8,
-                Children = { Gauge("CPU", 42), Gauge("Memory", 67), Gauge("Disk", 23) }
-            }
+            Factory = () => new StackPanel { Spacing = 8, Children = { Gauge("CPU", 42), Gauge("Memory", 67), Gauge("Disk", 23) } }
         });
         _catalog.Add(new DashboardContentDefinition
         {
             Id = "log", Title = "Event log",
-            Factory = () => new ListBox
-            {
-                ItemsSource = Enumerable.Range(1, 40).Select(i => $"Event {i:000}: service heartbeat").ToArray()
-            }
+            Factory = () => new ListBox { ItemsSource = Enumerable.Range(1, 40).Select(i => $"Event {i:000}: service heartbeat").ToArray() }
         });
 
-        // Classic side: one complete recipe tile plus body-content tiles. One tile stays empty
+        // Tile grid side: one complete recipe tile plus body-content tiles. One tile stays empty
         // so the shared "+ Add content" menu is reachable in both hosts.
         var chart = _catalog.CreateTile("throughput");
         chart.GridX = 0;
@@ -65,10 +58,10 @@ public partial class CatalogDemo : UserControl, IDisposable
         chart.GridW = 2;
         chart.GridH = 2;
         _completeTiles.Add(("throughput", chart));
-        Classic.Children.Add(chart);
-        AddClassicTile("notes", 2, 0);
-        AddClassicTile(null, 3, 0);
-        AddClassicTile("status", 2, 1, 2, 1);
+        TileGrid.Children.Add(chart);
+        AddTileGridTile("notes", 2, 0);
+        AddTileGridTile(null, 3, 0);
+        AddTileGridTile("status", 2, 1, 2);
 
         // Matrix side: the same definitions, each materialized as an independent instance.
         Matrix.ContentDefinitions = _catalog;
@@ -78,6 +71,7 @@ public partial class CatalogDemo : UserControl, IDisposable
         Matrix.SetContent(cells[0].Id, "notes");
         Matrix.SetContent(cells[1].Id, "throughput");
         Matrix.SetContent(cells[2].Id, "status");
+
         // cells[3] stays empty on purpose.
 
         Matrix.ContentChanged += (_, e) => Report("Matrix", e.AfterId);
@@ -86,26 +80,19 @@ public partial class CatalogDemo : UserControl, IDisposable
         Feedback.Text = "Pick '+ Add content' in either host: both menus list the same catalog.";
     }
 
-    private static StackPanel Gauge(string label, int value) => new()
-    {
-        Spacing = 4,
-        Children =
-        {
-            new TextBlock { Text = $"{label}  {value}%" },
-            new ProgressBar { Minimum = 0, Maximum = 100, Value = value }
-        }
-    };
+    private static StackPanel Gauge(string label, int value)
+        => new StackPanel { Spacing = 4, Children = { new TextBlock { Text = $"{label}  {value}%" }, new ProgressBar { Minimum = 0, Maximum = 100, Value = value } } };
 
-    private DashboardContentTile AddClassicTile(string? contentId, int x, int y, int w = 1, int h = 1)
+    private DashboardContentTile AddTileGridTile(string? contentId, int x, int y, int w = 1, int h = 1)
     {
         var tile = new DashboardContentTile { ContentDefinitions = _catalog, ContentId = contentId, DisposeRemovedContent = true };
         tile.GridX = x;
         tile.GridY = y;
         tile.GridW = w;
         tile.GridH = h;
-        tile.ContentChanged += (_, e) => Report("Classic", e.AfterId);
-        _classicTiles.Add(tile);
-        Classic.Children.Add(tile);
+        tile.ContentChanged += (_, e) => Report("Tile grid", e.AfterId);
+        _gridTiles.Add(tile);
+        TileGrid.Children.Add(tile);
 
         return tile;
     }
@@ -122,11 +109,31 @@ public partial class CatalogDemo : UserControl, IDisposable
         Feedback.Text = $"Added 'Added content {number}' to the catalog; both hosts list it under '+ Add content' now.";
     }
 
+    private async void PickTileGrid_Click(object? sender, RoutedEventArgs e)
+    {
+        if (TileGrid.IsPickingTile)
+            return;
+
+        Feedback.Text = "Choose a grid tile; Escape cancels.";
+        var tile = await TileGrid.PickTileAsync(_ => true);
+        Feedback.Text = tile == null ? "Selection cancelled." : $"Tile grid target: {tile.TileHeader}";
+    }
+
+    private async void PickMatrix_Click(object? sender, RoutedEventArgs e)
+    {
+        if (Matrix.IsPickingCell)
+            return;
+
+        Feedback.Text = "Choose a matrix cell; Escape cancels.";
+        var id = await Matrix.PickCellAsync((_, _) => true);
+        Feedback.Text = id.HasValue ? $"Matrix target: {Matrix.GetTile(id.Value)?.TileHeader}" : "Selection cancelled.";
+    }
+
     /// <summary>Counts the live views of a definition across both dashboards.</summary>
-    private int Instances(string id) =>
-        Matrix.Layout.Cells.Count(c => c.ContentId == id) +
-        _classicTiles.Count(t => t.ContentId == id) +
-        _completeTiles.Count(t => t.Id == id);
+    private int Instances(string id)
+        => Matrix.Layout.Cells.Count(c => c.ContentId == id) +
+           _gridTiles.Count(t => t.ContentId == id) +
+           _completeTiles.Count(t => t.Id == id);
 
     /// <summary>Rebuilds the catalog strip with live instance counts for every definition.</summary>
     private void RefreshLibrary()
@@ -136,12 +143,7 @@ public partial class CatalogDemo : UserControl, IDisposable
         foreach (var definition in _catalog)
         {
             var count = Instances(definition.Id);
-            Library.Children.Add(new TextBlock
-            {
-                Text = $"{definition.Title} ×{count}",
-                Margin = new Thickness(0, 0, 14, 0),
-                Opacity = count > 0 ? 1 : 0.55
-            });
+            Library.Children.Add(new TextBlock { Text = $"{definition.Title} ×{count}", Margin = new Thickness(0, 0, 14, 0), Opacity = count > 0 ? 1 : 0.55 });
         }
     }
 
@@ -155,7 +157,7 @@ public partial class CatalogDemo : UserControl, IDisposable
 
     public void Dispose()
     {
-        foreach (var child in Classic.Children.OfType<IDisposable>().ToArray())
+        foreach (var child in TileGrid.Children.OfType<IDisposable>().ToArray())
             child.Dispose();
 
         Matrix.Dispose();
